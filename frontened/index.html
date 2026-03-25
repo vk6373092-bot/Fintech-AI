@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Money Mentor PRO</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+
+    <style>
+        :root {
+            --bg-main: #131316;
+            --bg-sidebar: #1a1a1f;
+            --bg-card: #1f1f24;
+            --bg-card-hover: #2a2a32;
+            --text-main: #ffffff;
+            --text-muted: #8b8b93;
+            --accent-purple: #c0a3ff;
+            --accent-purple-light: #dfd1ff;
+            --success-green: #4ade80;
+            --danger-red: #f87171;
+            --border-color: #2e2e36;
+            --modal-bg: rgba(19, 19, 22, 0.95);
+        }
+
+        body { font-family: 'Inter', sans-serif; margin: 0; background-color: var(--bg-main); color: var(--text-main); height: 100vh; overflow: hidden; top: 0px !important; }
+        .container { display: grid; grid-template-columns: 240px 1fr; height: 100vh; }
+        
+        /* --- Sidebar Styles --- */
+        .sidebar { background: var(--bg-sidebar); padding: 24px 16px; border-right: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 8px; }
+        .brand { display: flex; align-items: center; gap: 12px; font-size: 1.2rem; font-weight: 700; margin-bottom: 30px; padding: 0 10px; color: var(--accent-purple); }
+        .nav-link { width: 100%; padding: 12px 16px; background: transparent; color: var(--text-muted); border: none; cursor: pointer; text-align: left; border-radius: 8px; font-size: 0.95rem; font-weight: 500; display: flex; align-items: center; gap: 12px; transition: all 0.2s ease; text-decoration: none; }
+        .nav-link:hover, .nav-link.active { background: var(--bg-card); color: var(--text-main); }
+        .nav-link.active { background: rgba(192, 163, 255, 0.1); color: var(--accent-purple); }
+        .nav-link span.material-symbols-outlined { font-size: 18px; }
+
+        /* Notification Dropdown CSS */
+        .notif-wrapper { position: relative; }
+        .badge { 
+            position: absolute; top: 5px; right: 5px; width: 8px; height: 8px; 
+            background: var(--danger-red); border-radius: 50%; display: none; 
+        }
+
+        /* --- ADDITION: Visual Pulse Animation --- */
+        .pulse-active {
+            animation: shadow-pulse 1.5s infinite;
+        }
+        .audio-ready .material-symbols-outlined#notifIconMain {
+    animation: bell-shake 0.5s ease-in-out;
+}
+@keyframes bell-shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-3px); }
+    75% { transform: translateX(3px); }
+}
+
+        @keyframes shadow-pulse {
+            0% { box-shadow: 0 0 0 0px rgba(248, 113, 113, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(248, 113, 113, 0); }
+            100% { box-shadow: 0 0 0 0px rgba(248, 113, 113, 0); }
+        }
+
+        .notif-dropdown {
+            position: absolute; top: 55px; right: 0; width: 300px; 
+            background: #1a1a24; border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px; display: none; z-index: 1000; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .notif-header { padding: 12px; font-weight: 700; border-bottom: 1px solid rgba(255,255,255,0.05); color: var(--accent-purple); }
+        .notif-item { padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.8rem; line-height: 1.4; }
+        .notif-item:last-child { border-bottom: none; }
+        
+        /* --- Main Content Area --- */
+        .main { padding: 0 32px 32px 32px; overflow-y: auto; }
+        .top-header { display: flex; justify-content: space-between; align-items: center; padding: 20px 0; border-bottom: 1px solid var(--border-color); margin-bottom: 24px; }
+        .top-nav { display: flex; gap: 20px; background: var(--bg-card); padding: 6px; border-radius: 20px; border: 1px solid var(--border-color); }
+        .top-nav a { text-decoration: none; color: var(--text-muted); padding: 6px 16px; font-size: 0.85rem; border-radius: 14px; transition: 0.2s; }
+        .top-nav a:hover { color: var(--text-main); }
+        .top-nav a.active { background: var(--bg-main); color: var(--text-main); }
+        .header-actions { display: flex; gap: 16px; align-items: center; color: var(--text-muted); position: relative; }
+        
+        /* DROPDOWN MENU CSS */
+        .profile-dropdown { display: none; position: absolute; top: 50px; right: 0; background-color: var(--bg-card); min-width: 220px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid var(--border-color); z-index: 1000; overflow: hidden; animation: slideDown 0.2s ease-out; }
+        .profile-dropdown.show { display: block; }
+        .dropdown-item { padding: 14px 20px; display: flex; align-items: center; gap: 12px; color: var(--text-muted); cursor: pointer; transition: background 0.2s, color 0.2s; font-size: 0.95rem; }
+        .dropdown-item:hover { background-color: var(--bg-card-hover); color: var(--text-main); }
+        .dropdown-item span { font-size: 22px; }
+        
+        /* Toast CSS */
+        .toast-container { position: fixed; top: 24px; right: 24px; z-index: 9999; display: flex; flex-direction: column; gap: 12px; }
+        .toast-notification { background: rgba(31, 31, 36, 0.95); backdrop-filter: blur(10px); border-left: 4px solid var(--accent-purple); border-top: 1px solid var(--border-color); border-right: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); color: var(--text-main); padding: 16px 20px; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); display: flex; align-items: center; gap: 12px; animation: slideInRight 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; max-width: 320px; font-size: 0.9rem; line-height: 1.4; }
+        .toast-notification.fade-out { animation: fadeOutRight 0.4s ease forwards; }
+        @keyframes slideInRight { from { transform: translateX(120%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes fadeOutRight { from { transform: translateX(0); opacity: 1; } to { transform: translateX(120%); opacity: 0; } }
+        
+        .bell-container { position: relative; display: flex; align-items: center; justify-content: center; }
+        .notif-badge { position: absolute; top: -2px; right: -2px; width: 8px; height: 8px; background: var(--danger-red); border-radius: 50%; display: none; box-shadow: 0 0 5px var(--danger-red); }
+        .goog-te-banner-frame.skiptranslate { display: none !important; } #google_translate_element { display: none; }
+        
+        /* Card System */
+        .view-section { display: none; } .view-section.active { display: block; }
+        .base-card { background: var(--bg-card); padding: 24px; border-radius: 16px; border: 1px solid var(--border-color); }
+        h3 { margin-top: 0; font-size: 1.1rem; font-weight: 500; color: var(--text-main); }
+
+        /* Dashboard Grid Specifics */
+        .dash-grid { display: grid; grid-template-columns: 1.6fr 1fr; gap: 20px; }
+        .col { display: flex; flex-direction: column; gap: 20px; }
+        .balance-card { position: relative; overflow: hidden; }
+        .balance-label { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 8px; }
+        .balance-amount { font-size: 2.8rem; font-weight: 600; margin: 0 0 24px 0; }
+        .btn-group { display: flex; gap: 12px; }
+        .btn-primary { background: var(--accent-purple); color: #1a1a1f; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.2s; }
+        .btn-primary:hover { background: #b389f5; transform: translateY(-1px); }
+        .btn-outline { background: transparent; color: var(--text-main); border: 1px solid var(--border-color); padding: 10px 20px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.2s; }
+        .btn-outline:hover { background: var(--bg-card-hover); border-color: var(--accent-purple); color: var(--accent-purple); }
+        
+        /* Activity Table */
+        .activity-row { display: grid; grid-template-columns: 80px 2fr 1fr 1fr 1fr; align-items: center; padding: 16px 0; border-bottom: 1px solid var(--border-color); font-size: 0.9rem; cursor: pointer; transition: background 0.2s; }
+        .activity-row:hover { background: rgba(192, 163, 255, 0.05); }
+        .activity-row:last-child { border-bottom: none; padding-bottom: 0; }
+        .act-date { color: var(--text-muted); }
+        .act-desc { display: flex; align-items: center; gap: 10px; }
+        .badge { background: #2a2a32; padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; color: var(--text-muted); }
+        .act-inc { color: var(--success-green); }
+        .act-exp { color: var(--danger-red); }
+        .act-bal { color: var(--text-muted); text-align: right; font-weight: 500; }
+        
+        /* Right Column Cards */
+        .debt-header { display: flex; justify-content: space-between; margin-bottom: 10px; }
+        .debt-amount { font-size: 1.8rem; font-weight: 600; }
+        .debt-limit { color: var(--text-muted); font-size: 0.8rem; }
+        .progress-bar { width: 100%; height: 8px; background: #2a2a32; border-radius: 4px; margin-top: 15px; overflow: hidden; }
+        .progress-fill { width: 54%; background: var(--accent-purple); border-radius: 4px; transition: width 0.3s ease; }
+        .assets-amount { font-size: 1.8rem; font-weight: 600; margin-bottom: 10px; }
+        .chart-container { height: 140px; width: 100%; }
+        
+        /* MODALS */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); backdrop-filter: blur(8px); }
+        .modal-content { background: var(--bg-card); margin: 5% auto; padding: 0; border-radius: 20px; border: 1px solid var(--border-color); width: 90%; max-width: 500px; max-height: 90vh; overflow-y: auto; animation: modalSlideIn 0.3s ease-out; }
+        @keyframes modalSlideIn { from { opacity: 0; transform: translateY(-50px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        .modal-header { padding: 24px 32px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
+        .modal-title { font-size: 1.3rem; font-weight: 600; color: var(--text-main); }
+        .close { color: var(--text-muted); font-size: 28px; font-weight: bold; cursor: pointer; padding: 0 8px; border-radius: 50%; transition: 0.2s; }
+        .close:hover { background: rgba(255,255,255,0.1); color: var(--text-main); }
+        .modal-body { padding: 32px; }
+        .form-group { margin-bottom: 24px; }
+        .form-label { display: block; margin-bottom: 8px; color: var(--text-muted); font-size: 0.9rem; font-weight: 500; }
+        .form-input { width: 100%; padding: 14px 16px; background: #151518; border: 1px solid var(--border-color); border-radius: 12px; color: var(--text-main); font-size: 1rem; transition: all 0.2s; }
+        .form-input:focus { outline: none; border-color: var(--accent-purple); box-shadow: 0 0 0 3px rgba(192, 163, 255, 0.1); }
+        .history-item { display: flex; justify-content: space-between; padding: 16px; border: 1px solid var(--border-color); border-radius: 12px; margin-bottom: 12px; background: var(--bg-card-hover); }
+        .history-details h4 { margin: 0 0 4px 0; color: var(--text-main); }
+        .history-amount { font-size: 1.2rem; font-weight: 600; }
+        .history-date { color: var(--text-muted); font-size: 0.85rem; }
+        
+        @media (max-width: 768px) { .container { grid-template-columns: 1fr; } .sidebar { position: fixed; z-index: 999; width: 280px; left: -280px; height: 100vh; transition: left 0.3s; } .dash-grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+
+<body>
+
+<div id="toastContainer" class="toast-container"></div>
+
+<div id="google_translate_element"></div>
+<script type="text/javascript">
+function googleTranslateElementInit() {
+    new google.translate.TranslateElement({pageLanguage: 'en', includedLanguages: 'en,hi,es,ja,ru,ko', autoDisplay: false}, 'google_translate_element');
+}
+</script>
+<script type="text/javascript" src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+
+<div class="container">
+    <div class="sidebar">
+        <div class="brand"><span class="material-symbols-outlined">api</span> Fintech</div>
+        <a href="index.html" class="nav-link active"><span class="material-symbols-outlined">dashboard</span> Dashboard</a>
+        <a href="ai_advisor.html" class="nav-link"><span class="material-symbols-outlined" style="color:var(--accent-purple-light)">smart_toy</span> AI Advisor</a>
+        <a href="fire_planner.html" class="nav-link"><span class="material-symbols-outlined">local_fire_department</span> FIRE Planner</a>
+        <a href="health.html" class="nav-link"><span class="material-symbols-outlined">monitor_heart</span> Health Score</a>
+        <a href="life_events.html" class="nav-link"><span class="material-symbols-outlined">cake</span> Life Events</a>
+        <a href="tax_wizard.html" class="nav-link"><span class="material-symbols-outlined">receipt_long</span> Tax Wizard</a>
+        <a href="couple_planner.html" class="nav-link"><span class="material-symbols-outlined">group</span> Couple Planner</a>
+        <a href="portfolio_xray.html" class="nav-link"><span class="material-symbols-outlined">pie_chart</span> Portfolio X-Ray</a>
+        <a href="portfolio.html" class="nav-link"><span class="material-symbols-outlined">analytics</span> Portfolio</a>
+        <a href="analytics.html" class="nav-link"><span class="material-symbols-outlined">show_chart</span> Analytics</a>
+        <a href="future_simulator.html" class="nav-link"><span class="material-symbols-outlined">trending_up</span> Future Simulator</a>
+    </div>
+
+    <div class="main">
+        <div class="top-header">
+            <div style="color: var(--text-muted); font-size: 0.9rem;">
+                Personal account / <span style="color: white; font-weight: 500;">Dashboard</span>
+            </div>
+            <div class="top-nav">
+                <a href="index.html" class="active"><span class="material-symbols-outlined" style="font-size:16px; vertical-align:middle;">account_balance_wallet</span> Wallet</a>
+                <a href="portfolio.html">Portfolio</a>
+                <a href="analytics.html">Analytics</a>
+            </div>
+
+            <div class="header-actions">
+                <div class="notif-wrapper">
+                    <span class="material-symbols-outlined" id="notifIconMain" style="cursor:pointer;" onclick="toggleNotifs()">notifications</span>
+                    <div class="badge" id="notifBadgeMain"></div>
+                    
+                    <div id="notifDropdown" class="notif-dropdown">
+                        <div class="notif-header">
+                            Insights & Alerts
+                            <span onclick="clearNotifications()" style="font-size: 11px; cursor: pointer; color: var(--text-muted); font-weight: 400;">Clear all</span>
+                        </div>
+                        <div id="notifList">
+                            <div class="notif-item">No new alerts</div>
+                        </div>
+                    </div>
+                </div>
+
+                <span class="material-symbols-outlined" style="cursor:pointer;" onclick="openSettingsModal()">settings</span>
+                
+                <div style="width:32px; height:32px; background:var(--accent-purple); border-radius:50%; display:flex; justify-content:center; align-items:center; color:#000; font-weight:bold; cursor:pointer;" onclick="toggleProfileMenu()">A</div>
+                
+                <div id="profileMenu" class="profile-dropdown">
+                    <div class="dropdown-item" onclick="openSettingsModal()"><span class="material-symbols-outlined">settings</span> Settings</div>
+                    <div class="dropdown-item" onclick="openHelpModal()"><span class="material-symbols-outlined">help</span> Help</div>
+                    <div class="dropdown-item" onclick="openFeedbackModal()"><span class="material-symbols-outlined">feedback</span> Feedback</div>
+                    <div class="dropdown-item" style="border-top: 1px solid var(--border-color); color: var(--danger-red);" onclick="logoutUser()">
+                        <span class="material-symbols-outlined">logout</span> Logout
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="dashboard" class="view-section active">
+            <div class="dash-grid">
+                <div class="col">
+                    <div class="base-card balance-card">
+                        <div class="balance-label">Total Balance</div>
+                        <div class="balance-amount" id="totalBalance">$0.00</div>
+                        <div class="btn-group">
+                            <button class="btn-primary" onclick="openTransferModal()">
+                                <span class="material-symbols-outlined">arrow_outward</span> New transfer
+                            </button>
+                            <button class="btn-outline" onclick="openHistoryModal()">
+                                <span class="material-symbols-outlined">history</span> Full history
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="base-card">
+                        <h3 style="margin-bottom: 20px;">Recent Activity</h3>
+                        <div id="recentActivityContainer">
+                            <div style="color: var(--text-muted); font-size: 0.9rem;">Loading transactions...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col">
+                    <div class="base-card">
+                        <div class="debt-header"><span style="color:var(--text-muted);">Credit Bank Debt</span></div>
+                        <div class="debt-amount">$8,445.98 <span class="debt-limit">/16,234.00</span></div>
+                        <div style="font-size: 0.8rem; color:var(--text-muted); margin-top:10px;">54% completed</div>
+                        <div class="progress-bar"><div class="progress-fill" style="width: 54%"></div></div>
+                    </div>
+
+                    <div class="base-card">
+                        <div class="assets-amount" style="color: var(--success-green);">$124,500</div>
+                        <h3 style="margin-top: 0; margin-bottom: 20px;">Assets Overview</h3>
+                        <div class="chart-container"><canvas id="assetsChart"></canvas></div>
+                    </div>
+
+                    <div class="base-card" style="padding: 20px;">
+                        <h3 style="margin-bottom: 16px;">Quick Stats</h3>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; font-size: 0.9rem;">
+                            <div>
+                                <div style="color: var(--text-muted);">Monthly Income</div>
+                                <div style="font-weight: 600; color: var(--success-green);">$8,200</div>
+                            </div>
+                            <div>
+                                <div style="color: var(--text-muted);">Monthly Expenses</div>
+                                <div style="font-weight: 600; color: var(--danger-red);">$6,450</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="settingsModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <div class="modal-title" style="display: flex; align-items: center; gap: 10px;">
+                <span class="material-symbols-outlined" style="color: var(--accent-purple);">settings</span> 
+                Platform Settings & Plans
+            </div>
+            <span class="close" onclick="closeSettingsModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label class="form-label" style="color: var(--text-main); font-weight: 600;">Preferences</label>
+                <select class="form-input" id="languageSelect" onchange="triggerLanguageChange()">
+                    <option value="en">English (Default)</option>
+                    <option value="hi">Hindi (हिंदी)</option>
+                    <option value="es">Spanish (Español)</option>
+                    <option value="ru">Russian (Русский)</option>
+                    <option value="ja">Japanese (日本語)</option>
+                    <option value="ko">Korean (한국어)</option>
+                </select>
+                <p style="color: var(--text-muted); font-size: 0.8rem; margin-top: 10px;">Changes apply instantly across the dashboard via Google Translate.</p>
+            </div>
+            <hr style="border: none; border-top: 1px solid var(--border-color); margin: 25px 0;">
+            <div class="form-group">
+                <label class="form-label" style="color: var(--text-main); font-weight: 600;">My Financial Plans</label>
+                <div id="firePlanSummary" style="background: rgba(0,0,0,0.3); padding: 16px; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 12px;">
+                    <div style="color: var(--text-muted); font-size: 0.9rem; text-align: center;">Loading saved plans...</div>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn-outline" style="flex: 1; justify-content: center; padding: 10px;" onclick="window.location.href='fire_planner.html'">
+                        <span class="material-symbols-outlined" style="font-size: 18px;">edit</span> Edit FIRE Plan
+                    </button>
+                    <button class="btn-outline" style="flex: 1; justify-content: center; padding: 10px;" onclick="window.location.href='health.html'">
+                        <span class="material-symbols-outlined" style="font-size: 18px;">monitor_heart</span> Edit Health
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="helpModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <div class="modal-title" style="display: flex; align-items: center; gap: 10px;"><span class="material-symbols-outlined" style="color: var(--accent-purple);">help</span> Help & Support</div>
+            <span class="close" onclick="closeHelpModal()">&times;</span>
+        </div>
+        <div class="modal-body" style="text-align: center;">
+            <span class="material-symbols-outlined" style="font-size: 60px; color: var(--success-green); margin-bottom: 20px;">support_agent</span>
+            <h3 style="margin-bottom: 10px;">Need Assistance?</h3>
+            <p style="color: var(--text-muted); margin-bottom: 25px; line-height: 1.5;">We're here to help you manage your finances better. Reach out to your dedicated account manager.</p>
+            <div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 12px; text-align: left; border: 1px solid var(--border-color);">
+                <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
+                    <span class="material-symbols-outlined" style="color: var(--accent-purple);">mail</span>
+                    <div><div style="font-size: 0.8rem; color: var(--text-muted);">Email Support</div><div style="font-weight: 600;">rajendergrewal58@gmail.com</div></div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <span class="material-symbols-outlined" style="color: var(--accent-purple);">call</span>
+                    <div><div style="font-size: 0.8rem; color: var(--text-muted);">Phone Support</div><div style="font-weight: 600;">+91 98765 43210</div></div>
+                </div>
+            </div>
+            <button class="btn-primary" style="width: 100%; justify-content: center; margin-top: 25px;" onclick="window.open('https://mail.google.com/mail/?view=cm&fs=1&to=rajendergrewal58@gmail.com', '_blank')">Send an Email via Gmail</button>
+        </div>
+    </div>
+</div>
+
+<div id="feedbackModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <div class="modal-title" style="display: flex; align-items: center; gap: 10px;"><span class="material-symbols-outlined" style="color: var(--accent-purple);">feedback</span> Send Feedback</div>
+            <span class="close" onclick="closeFeedbackModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <form onsubmit="submitFeedback(event)">
+                <div class="form-group">
+                    <label class="form-label">We'd love to hear your thoughts!</label>
+                    <textarea class="form-input" id="feedbackText" rows="5" placeholder="Share your experience or suggestions here..." required style="resize: vertical; font-family: inherit;"></textarea>
+                </div>
+                <button type="submit" class="btn-primary" style="width: 100%; justify-content: center;"><span class="material-symbols-outlined">send</span> Send Feedback</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div id="transferModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <div class="modal-title">New Transfer</div>
+            <span class="close" onclick="closeTransferModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <form onsubmit="processTransfer(event)">
+                <div class="form-group">
+                    <label class="form-label">Amount ($)</label>
+                    <input type="number" class="form-input" id="transferAmount" placeholder="0.00" step="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Description</label>
+                    <input type="text" class="form-input" id="transferDesc" placeholder="What did you spend on?" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Category</label>
+                    <select class="form-input" id="transferCategory">
+                        <option value="Income">Income</option>
+                        <option value="Food">Food</option>
+                        <option value="Transport">Transport</option>
+                        <option value="Shopping">Shopping</option>
+                        <option value="Bills">Bills</option>
+                        <option value="Investment">Investment</option>
+                        <option value="Expense">Other Expense</option>
+                    </select>
+                </div>
+                <button id="transferSubmitBtn" type="submit" class="btn-primary" style="width: 100%; padding: 14px; justify-content: center;">
+                    <span class="material-symbols-outlined">check</span> Confirm Transfer
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div id="historyModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <div class="modal-title">Transaction History</div>
+            <span class="close" onclick="closeHistoryModal()">&times;</span>
+        </div>
+        <div class="modal-body" id="historyContent">
+            <div style="color: var(--text-muted); text-align: center;">Loading history...</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- AUDIO ALERT ENGINE ---
+    const alertSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2861/2861-preview.mp3');
+    alertSound.volume = 0.4;
+
+    // ========================================================
+    // 1. AUTHENTICATION & INITIALIZATION
+    // ========================================================
+    let userToken = null;
+
+    window.addEventListener('DOMContentLoaded', () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const tokenFromUrl = urlParams.get('token');
+        
+        if (tokenFromUrl) {
+            localStorage.setItem('finwise_token', tokenFromUrl);
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+
+        userToken = localStorage.getItem('finwise_token');
+        if (!userToken) {
+            window.location.href = 'login.html'; 
+        } else {
+            loadTransactionsFromDB();
+            fetchNotifications(); 
+        }
+
+        const ctx = document.getElementById('assetsChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: { labels: ['Stocks', 'Crypto', 'Cash', 'Bonds'], datasets: [{ data: [45, 25, 20, 10], backgroundColor: ['#c0a3ff', '#4ade80', '#f87171', '#60a5fa'], borderWidth: 0 }] },
+            options: { responsive: true, maintainAspectRatio: false, cutout: '70%' }
+        });
+    });
+
+    function logoutUser() {
+        localStorage.removeItem('finwise_token');
+        window.location.href = 'login.html';
+    }
+
+    // === AUDIO FIX - ADD THIS ONLY ===
+let audioUnlocked = false;
+
+// Unlock audio on FIRST user click anywhere
+document.addEventListener('click', function unlockAudio() {
+    if (!audioUnlocked) {
+        alertSound.play().then(() => {
+            alertSound.pause();
+            alertSound.currentTime = 0;
+            audioUnlocked = true;
+            document.body.classList.add('audio-ready');
+        }).catch(() => {});
+        document.removeEventListener('click', unlockAudio);
+    }
+}, { once: true });
+
+
+    // ========================================================
+    // 2. NOTIFICATION LOGIC WITH PULSE & AUDIO
+    // ========================================================
+    async function fetchNotifications() {
+    if(!userToken) return;
+    try {
+        const res = await fetch('/api/notifications', {
+            headers: { 'Authorization': `Bearer ${userToken}` }
+        });
+        const data = await res.json();
+        const list = document.getElementById('notifList');
+        const badge = document.getElementById('notifBadgeMain');
+        const icon = document.getElementById('notifIconMain');
+
+        if (data.length > 0) {
+            badge.style.display = 'block';
+            
+            // === FIXED AUDIO + PULSE ===
+            const hasNewWarning = data.some(n => n.type === 'warning' && !n.read);
+            if (hasNewWarning && audioUnlocked) {
+                badge.classList.add('pulse-active');
+                alertSound.play().catch(e => console.log("Audio playing")); // Now works!
+                icon.style.animation = 'bell-shake 0.5s ease-in-out';
+                setTimeout(() => icon.style.animation = '', 500);
+            }
+
+            list.innerHTML = data.map(n => `
+                <div class="notif-item">
+                    <strong style="color:${n.type === 'warning' ? 'var(--danger-red)' : 'var(--success-green)' }">${n.title}</strong><br>
+                    ${n.message}
+                </div>
+            `).join('');
+        } else {
+            list.innerHTML = `<div class="notif-item">No new alerts</div>`;
+        }
+    } catch(e) { console.log("Pulse fetch error"); }
+}
+
+
+    function toggleNotifs() {
+        const dropdown = document.getElementById('notifDropdown');
+        const badge = document.getElementById('notifBadgeMain');
+        const isShowing = dropdown.style.display === 'block';
+        dropdown.style.display = isShowing ? 'none' : 'block';
+        if(!isShowing) {
+            badge.classList.remove('pulse-active'); // Stop pulsing when opened
+        }
+    }
+
+    function clearNotifications() {
+        const badge = document.getElementById('notifBadgeMain');
+        badge.style.display = 'none';
+        badge.classList.remove('pulse-active');
+        document.getElementById('notifList').innerHTML = `<div class="notif-item">No new alerts</div>`;
+        showToast("Notifications cleared", "info");
+    }
+
+    setInterval(fetchNotifications, 60000); 
+
+    // ========================================================
+    // 3. LIVE DATABASE LOGIC (MONGODB)
+    // ========================================================
+    let transactions = []; 
+
+    async function loadTransactionsFromDB() {
+        try {
+            const res = await fetch('http://localhost:5000/api/transactions', {
+                method: 'GET',
+                headers: { 'Authorization': `Bearer ${userToken}` }
+            });
+            
+            if (res.status === 401 || res.status === 403) {
+                logoutUser();
+                return;
+            }
+
+            transactions = await res.json();
+            updateDashboardUI();
+        } catch (error) {
+            console.error("Error loading transactions:", error);
+            showToast("Failed to load live transactions", "error");
+        }
+    }
+
+    async function processTransfer(event) {
+        event.preventDefault();
+        const amount = parseFloat(document.getElementById('transferAmount').value);
+        const desc = document.getElementById('transferDesc').value;
+        const category = document.getElementById('transferCategory').value;
+        const type = category === 'Income' ? 'income' : 'expense';
+
+        const btn = document.getElementById('transferSubmitBtn');
+        const origText = btn.innerHTML;
+        btn.innerHTML = '<span class="material-symbols-outlined" style="animation: spin 1s linear infinite;">autorenew</span> Saving...';
+
+        try {
+            const res = await fetch('http://localhost:5000/api/transactions', {
+                method: 'POST',
+                headers: { 
+                    'Authorization': `Bearer ${userToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ amount, description: desc, category, type })
+            });
+
+            if (res.ok) {
+                closeTransferModal();
+                showToast("✓ Transfer saved to cloud!", "success");
+                loadTransactionsFromDB(); 
+            } else {
+                showToast("Failed to save transaction.", "error");
+            }
+        } catch (error) {
+            showToast("Network error. Is backend running?", "error");
+        } finally {
+            btn.innerHTML = origText;
+        }
+    }
+
+    // ========================================================
+    // 4. UI RENDERING LOGIC
+    // ========================================================
+
+    function updateDashboardUI() {
+        let balance = 3000000; 
+        
+        transactions.forEach(t => {
+            if(t.type.toLowerCase() === 'income') balance += t.amount;
+            else balance -= t.amount;
+        });
+        document.getElementById('totalBalance').textContent = `$${balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+        const recentContainer = document.getElementById('recentActivityContainer');
+        const latest = transactions.slice(0, 4);
+        
+        if (latest.length === 0) {
+            recentContainer.innerHTML = `<div style="color: var(--text-muted); font-size: 0.9rem;">No recent transactions. Add one to get started!</div>`;
+        } else {
+            let htmlContent = latest.map(t => {
+                const dateStr = new Date(t.date).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit' }).replace(/\//g, '.');
+                const isInc = t.type.toLowerCase() === 'income';
+                return `
+                    <div class="activity-row" onclick="openHistoryModal()">
+                        <div class="act-date">${dateStr}</div>
+                        <div class="act-desc">
+                            <span class="material-symbols-outlined" style="color:var(--text-muted);">${getIcon(t.category)}</span>
+                            ${t.description}
+                        </div>
+                        <div><span class="badge">${t.category}</span></div>
+                        <div class="${isInc ? 'act-inc' : 'act-exp'}">${isInc ? '+' : '-'}$${Math.abs(t.amount).toLocaleString()}</div>
+                        <div class="act-bal"></div> 
+                    </div>
+                `;
+            }).join('');
+
+            if (transactions.length > 4) {
+                const extraCount = transactions.length - 4;
+                htmlContent += `
+                    <div style="text-align: center; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border-color);">
+                        <span onclick="openHistoryModal()" style="color: var(--accent-purple); cursor: pointer; font-size: 0.9rem; font-weight: 500; text-decoration: none;">
+                            See ${extraCount} more transactions...
+                        </span>
+                    </div>
+                `;
+            }
+            recentContainer.innerHTML = htmlContent;
+        }
+
+        if (document.getElementById('historyModal').style.display === 'block') {
+            updateHistoryModal();
+        }
+    }
+
+    function updateHistoryModal() {
+        const historyContent = document.getElementById('historyContent');
+        if (transactions.length === 0) {
+            historyContent.innerHTML = `<div style="color: var(--text-muted); text-align: center;">No history found.</div>`;
+            return;
+        }
+        
+        historyContent.innerHTML = transactions.slice(0, 50).map(t => {
+            const dateStr = new Date(t.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            const isInc = t.type.toLowerCase() === 'income';
+            return `
+                <div class="history-item">
+                    <div class="history-details">
+                        <h4>${t.description}</h4>
+                        <div style="color: var(--text-muted); font-size: 0.85rem;">${dateStr} • ${t.category}</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div class="history-amount ${isInc ? 'act-inc' : 'act-exp'}">
+                            ${isInc ? '+' : '-'}$${Math.abs(t.amount).toLocaleString()}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    function getIcon(category) {
+        const icons = { 'Income': 'account_balance_wallet', 'Food': 'restaurant', 'Transport': 'directions_car', 'Shopping': 'shopping_bag', 'Bills': 'receipt', 'Investment': 'show_chart', 'Expense': 'payments' };
+        return icons[category] || 'help';
+    }
+
+    // ========================================================
+    // 5. MODALS & OTHER UI
+    // ========================================================
+    async function loadSavedPlansToSettings() {
+        const summaryDiv = document.getElementById('firePlanSummary');
+        summaryDiv.innerHTML = '<div style="color: var(--text-muted); text-align: center; padding: 10px 0;"><span class="material-symbols-outlined" style="animation: spin 1s linear infinite; vertical-align: middle;">autorenew</span> Syncing data...</div>';
+
+        try {
+            const res = await fetch('http://localhost:5000/api/snapshot', {
+                headers: { 'Authorization': `Bearer ${userToken}` }
+            });
+            
+            if (res.ok) {
+                const data = await res.json();
+                if (data.fireData && Object.keys(data.fireData).length > 0) {
+                    const fd = data.fireData;
+                    const corpusFormatted = new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(fd.currentCorpus);
+                    summaryDiv.innerHTML = `
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <span style="color: var(--text-muted);">Target FIRE Age:</span>
+                            <strong style="color: var(--text-main);">${fd.retireAge} Years</strong>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <span style="color: var(--text-muted);">Current Corpus:</span>
+                            <strong style="color: var(--success-green);">₹${corpusFormatted}</strong>
+                        </div>
+                    `;
+                } else {
+                    summaryDiv.innerHTML = '<div style="color: var(--text-muted); text-align: center; padding: 10px 0;">No FIRE plan saved yet.</div>';
+                }
+            }
+        } catch (error) {
+            summaryDiv.innerHTML = '<div style="color: var(--danger-red); text-align: center; padding: 10px 0;">Sync failed.</div>';
+        }
+    }
+
+    function openTransferModal() { document.getElementById('transferModal').style.display = 'block'; }
+    function closeTransferModal() { document.getElementById('transferModal').style.display = 'none'; document.querySelector('#transferModal form').reset(); }
+    function openHistoryModal() { updateHistoryModal(); document.getElementById('historyModal').style.display = 'block'; }
+    function closeHistoryModal() { document.getElementById('historyModal').style.display = 'none'; }
+    function toggleProfileMenu() { document.getElementById('profileMenu').classList.toggle('show'); }
+    function openSettingsModal() { 
+        document.getElementById('profileMenu').classList.remove('show'); 
+        document.getElementById('settingsModal').style.display = 'block'; 
+        loadSavedPlansToSettings();
+    }
+    function closeSettingsModal() { document.getElementById('settingsModal').style.display = 'none'; }
+    function openHelpModal() { document.getElementById('profileMenu').classList.remove('show'); document.getElementById('helpModal').style.display = 'block'; }
+    function closeHelpModal() { document.getElementById('helpModal').style.display = 'none'; }
+    function openFeedbackModal() { document.getElementById('profileMenu').classList.remove('show'); document.getElementById('feedbackModal').style.display = 'block'; }
+    function closeFeedbackModal() { document.getElementById('feedbackModal').style.display = 'none'; document.getElementById('feedbackText').value = ''; }
+    function submitFeedback(event) { event.preventDefault(); showToast("✓ Thanks for your feedback!", "success"); closeFeedbackModal(); }
+
+    window.onclick = function(event) {
+        if (event.target == document.getElementById('transferModal')) closeTransferModal();
+        if (event.target == document.getElementById('historyModal')) closeHistoryModal();
+        if (event.target == document.getElementById('settingsModal')) closeSettingsModal();
+        if (event.target == document.getElementById('helpModal')) closeHelpModal();
+        if (event.target == document.getElementById('feedbackModal')) closeFeedbackModal();
+        if (!event.target.closest('.header-actions') && !event.target.closest('.notif-wrapper')) {
+            document.getElementById('profileMenu').classList.remove('show');
+            document.getElementById('notifDropdown').style.display = 'none';
+        }
+    }
+
+    function showToast(message, type = 'info') {
+        const container = document.getElementById('toastContainer');
+        const toast = document.createElement('div');
+        toast.style.cssText = `
+            background: ${type === 'success' ? 'var(--success-green)' : (type === 'error' ? 'var(--danger-red)' : 'var(--accent-purple)')};
+            color: white; padding: 16px 24px; border-radius: 12px; font-weight: 600;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3); margin-bottom: 10px;
+            transform: translateX(400px); transition: all 0.3s ease;
+        `;
+        toast.textContent = message;
+        container.appendChild(toast);
+        setTimeout(() => toast.style.transform = 'translateX(0)', 50);
+        setTimeout(() => { toast.style.transform = 'translateX(400px)'; setTimeout(() => toast.remove(), 300); }, 3000);
+    }
+
+    function triggerLanguageChange() {
+        const langCode = document.getElementById('languageSelect').value;
+        const googleSelectBox = document.querySelector("#google_translate_element select");
+        if(googleSelectBox) {
+            for(let i = 0; i < googleSelectBox.children.length; i++) {
+                if(googleSelectBox.children[i].value === langCode) {
+                    googleSelectBox.selectedIndex = i;
+                    googleSelectBox.dispatchEvent(new Event('change'));
+                    break;
+                }
+            }
+        }
+        closeSettingsModal();
+    }
+
+    // Live Notification Toast simulation
+    function showLiveNotification() {
+        const financialTips = [
+            { title: "Market Check", msg: "AI: Market check suggested. Consider rebalancing.", type: "info" },
+            { title: "Tax Action Required", msg: "Tax: Maximize 80C now to save ₹46,800.", type: "warning" },
+            { title: "Goal Milestone", msg: "Goal: 85% reached on your Emergency Fund!", type: "success" }
+        ];
+        const container = document.getElementById('toastContainer');
+        const badge = document.getElementById('notifBadgeMain');
+        const notifList = document.getElementById('notifList');
+        
+        const randomTip = financialTips[Math.floor(Math.random() * financialTips.length)];
+        
+        // 1. Create the Slide-in Toast
+        const toast = document.createElement('div');
+        toast.className = 'toast-notification';
+        toast.innerHTML = `<span class="material-symbols-outlined">notifications_active</span><div><strong>${randomTip.title}</strong><br>${randomTip.msg}</div>`;
+        container.appendChild(toast);
+        
+        // 2. ACTUALLY ADD IT TO THE BELL MENU SO IT IS VISIBLE LATER!
+        if (notifList.innerHTML.includes('No new alerts')) {
+            notifList.innerHTML = ''; 
+        }
+        const borderStyle = randomTip.type === 'warning' ? 'border-left: 3px solid var(--danger-red); background: rgba(248, 113, 113, 0.05);' : '';
+        const textColor = randomTip.type === 'warning' ? 'var(--danger-red)' : 'var(--success-green)';
+        
+        notifList.innerHTML = `
+            <div class="notif-item" style="${borderStyle}">
+                <strong style="color:${textColor}">${randomTip.type === 'warning' ? '⚠️ ' : ''}${randomTip.title}</strong><br>
+                ${randomTip.msg}
+            </div>
+        ` + notifList.innerHTML;
+
+        // 3. Trigger Visual Pulse & Sound (Only for Warnings)
+        badge.style.display = 'block';
+        if (randomTip.type === 'warning') {
+            badge.classList.add('pulse-active'); 
+            
+            // Play sound if audio has been unlocked by user click
+            if (audioUnlocked) {
+                alertSound.play().catch(e => console.log("Audio still blocked by browser."));
+                
+                // Shake the bell icon
+                const icon = document.getElementById('notifIconMain');
+                icon.style.animation = 'bell-shake 0.5s ease-in-out';
+                setTimeout(() => icon.style.animation = '', 500);
+            }
+        }
+        
+        // Remove toast after 4 seconds
+        setTimeout(() => { toast.classList.add('fade-out'); setTimeout(() => toast.remove(), 400); }, 4000);
+    }
+    
+    // Fire the simulation every 50 seconds
+    setInterval(showLiveNotification, 50000);
+</script>
+
+</body>
+</html>

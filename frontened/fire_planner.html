@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced FIRE Engine | FinWise</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+
+    <style>
+        :root {
+            --bg-deep: #0a0a0f;
+            --bg-panel: rgba(25, 25, 35, 0.7);
+            --border-glow: rgba(192, 163, 255, 0.2);
+            --text-main: #ffffff;
+            --text-muted: #94a3b8;
+            --theme-color: #a855f7; 
+            --theme-glow: rgba(168, 85, 247, 0.5);
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg-deep); color: var(--text-main); min-height: 100vh; background-image: radial-gradient(circle at 50% 0%, var(--theme-glow), transparent 50%); transition: background-image 0.5s ease; }
+
+        header { display: flex; justify-content: space-between; align-items: center; padding: 20px 40px; background: rgba(10, 10, 15, 0.8); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255,255,255,0.05); position: sticky; top: 0; z-index: 100; }
+        .header-btn { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 10px 16px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.3s; font-weight: 500; }
+        .header-btn:hover { background: rgba(255,255,255,0.1); }
+        .header-btn.primary { background: var(--theme-color); color: #000; border: none; font-weight: 600; min-width: 140px; justify-content: center; }
+
+        .dashboard-container { max-width: 1600px; margin: 0 auto; padding: 40px; display: grid; grid-template-columns: 380px 1fr 320px; gap: 30px; }
+        .glass-panel { background: var(--bg-panel); backdrop-filter: blur(16px); border: 1px solid var(--border-glow); border-radius: 20px; padding: 30px; box-shadow: 0 8px 32px rgba(0,0,0,0.3); transition: border-color 0.5s ease; }
+
+        h2, h3, h4 { font-weight: 600; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+        .highlight-text { color: var(--theme-color); transition: color 0.5s ease; }
+
+        .fire-modes { display: flex; gap: 10px; margin-bottom: 30px; }
+        .mode-btn { flex: 1; padding: 15px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: var(--text-muted); cursor: pointer; transition: all 0.3s; text-align: center; font-weight: 600; font-size: 0.95rem; }
+        .mode-btn.active { background: var(--theme-color); color: #000; box-shadow: 0 0 20px var(--theme-glow); border-color: transparent; }
+
+        .input-group { margin-bottom: 25px; }
+        .input-header { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 0.95rem; }
+        .val-display { color: var(--theme-color); font-weight: 700; transition: color 0.5s ease; }
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 20px; width: 20px; border-radius: 50%; background: #fff; cursor: pointer; margin-top: -8px; border: 3px solid var(--theme-color); box-shadow: 0 0 12px var(--theme-glow); transition: all 0.3s; }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 5px; background: rgba(255,255,255,0.15); border-radius: 3px; }
+
+        .stat-card { background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.05); padding: 25px; border-radius: 16px; margin-bottom: 25px; text-align: center; transition: all 0.3s; }
+        .stat-card:hover { transform: translateY(-2px); box-shadow: 0 15px 40px rgba(0,0,0,0.4); }
+        .stat-label { color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+        .stat-value { font-size: 2.5rem; font-weight: 800; color: white; margin-bottom: 8px; }
+        .stat-subtitle { font-size: 0.8rem; color: var(--text-muted); }
+
+        .chart-wrapper { position: relative; height: 450px; width: 100%; margin-top: 20px; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+
+        .scenario-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin: 25px 0; }
+        .scenario-btn { padding: 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.3); cursor: pointer; transition: all 0.3s; color: var(--text-muted); text-align: center; font-size: 0.85rem; }
+        .scenario-btn.active { background: var(--success); color: white; border-color: var(--success); box-shadow: 0 0 15px rgba(16,185,129,0.3); }
+
+        .progress-ring { position: relative; display: inline-block; width: 80px; height: 80px; margin: 10px auto; }
+        .progress-ring-circle { width: 80px; height: 80px; border-radius: 50%; background: conic-gradient(var(--success) calc(var(--progress, 0) * 1%), rgba(255,255,255,0.1) 0); }
+        .progress-ring-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 1.2rem; font-weight: 700; color: white; }
+
+        .ai-insight { background: linear-gradient(135deg, rgba(168,85,247,0.15), rgba(168,85,247,0.05)); border: 1px solid rgba(168,85,247,0.2); padding: 20px; border-radius: 16px; margin-top: 20px; }
+        .ai-icon { font-size: 24px; float: left; margin-right: 12px; }
+
+        .error-msg { display: none; color: #fff; background: var(--danger); padding: 12px; border-radius: 10px; font-size: 0.9rem; margin-bottom: 20px; text-align: center; font-weight: 500; }
+
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        @media (max-width: 1400px) { .dashboard-container { grid-template-columns: 1fr 1fr; } }
+        @media (max-width: 900px) { .dashboard-container { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div style="display: flex; align-items: center; gap: 20px;">
+            <button class="header-btn" onclick="window.location.href='index.html'">
+                <span class="material-symbols-outlined">arrow_back</span> Dashboard
+            </button>
+            <h1 style="font-size: 1.5rem; font-weight: 700; display: flex; align-items: center; gap: 10px;">
+                <span class="material-symbols-outlined highlight-text">local_fire_department</span> Advanced FIRE Engine
+            </h1>
+        </div>
+        <div style="display: flex; gap: 10px;">
+            <button class="header-btn" onclick="exportPlan()">
+                <span class="material-symbols-outlined">download</span> Export
+            </button>
+            <button class="header-btn primary" onclick="savePlan()">
+                <span class="material-symbols-outlined">save</span> Save Plan
+            </button>
+        </div>
+    </header>
+
+    <div class="dashboard-container">
+        
+        <div class="glass-panel">
+            <h3><span class="material-symbols-outlined highlight-text">tune</span> Simulation Parameters</h3>
+            
+            <div id="errorBanner" class="error-msg">
+                <span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle;">warning</span>
+                Please adjust sliders to customize your FIRE plan before saving.
+            </div>
+
+            <div class="fire-modes">
+                <button class="mode-btn" id="btn-lean" onclick="setMode('lean')">
+                    <div>Lean</div><div style="font-size: 0.8rem; opacity: 0.7;">₹30k/mo</div>
+                </button>
+                <button class="mode-btn active" id="btn-std" onclick="setMode('standard')">
+                    <div>Standard</div><div style="font-size: 0.8rem; opacity: 0.7;">₹60k/mo</div>
+                </button>
+                <button class="mode-btn" id="btn-fat" onclick="setMode('fat')">
+                    <div>Fat</div><div style="font-size: 0.8rem; opacity: 0.7;">₹1.2L/mo</div>
+                </button>
+            </div>
+
+            <div class="input-group">
+                <div class="input-header"><span>Current Age</span> <span class="val-display" id="valAge">25</span></div>
+                <input type="range" id="age" min="18" max="60" value="25" oninput="userInteracted()">
+            </div>
+
+            <div class="input-group">
+                <div class="input-header"><span>Target FIRE Age</span> <span class="val-display" id="valRetire">45</span></div>
+                <input type="range" id="retireAge" min="30" max="70" value="45" oninput="userInteracted()">
+            </div>
+
+            <div class="input-group">
+                <div class="input-header"><span>Current Monthly Expenses</span> <span class="val-display" id="valExp">₹50,000</span></div>
+                <input type="range" id="expenses" min="20000" max="500000" step="5000" value="50000" oninput="userInteracted()">
+            </div>
+
+            <div class="input-group">
+                <div class="input-header"><span>Current Corpus</span> <span class="val-display" id="valCurrent">₹5,00,000</span></div>
+                <input type="range" id="currentCorpus" min="0" max="50000000" step="100000" value="500000" oninput="userInteracted()">
+            </div>
+
+            <h4 style="margin: 30px 0 20px 0; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1);"><span class="material-symbols-outlined">precision_manufacturing</span> Market Assumptions</h4>
+
+            <div class="scenario-grid">
+                <div class="scenario-btn active" id="scen-base" onclick="setScenario('base')">Base Case</div>
+                <div class="scenario-btn" id="scen-bull" onclick="setScenario('bull')">Bull Market</div>
+                <div class="scenario-btn" id="scen-bear" onclick="setScenario('bear')">Bear Market</div>
+            </div>
+
+            <div class="input-group">
+                <div class="input-header"><span>Expected ROI</span> <span class="val-display" id="valRoi">12%</span></div>
+                <input type="range" id="roi" min="5" max="20" step="0.5" value="12" oninput="userInteracted()">
+            </div>
+            <div class="input-group">
+                <div class="input-header"><span>Inflation Rate</span> <span class="val-display" id="valInf">6%</span></div>
+                <input type="range" id="inflation" min="2" max="10" step="0.5" value="6" oninput="userInteracted()">
+            </div>
+            <div class="input-group">
+                <div class="input-header"><span>Safe Withdrawal Rate</span> <span class="val-display" id="valSwr">4%</span></div>
+                <input type="range" id="swr" min="2" max="6" step="0.1" value="4" oninput="userInteracted()">
+            </div>
+
+            <h4 style="margin-top: 20px;"><span class="material-symbols-outlined">trending_up</span> Income Growth</h4>
+            <div class="input-group">
+                <div class="input-header"><span>Annual Salary Growth</span> <span class="val-display" id="valSalaryGrowth">8%</span></div>
+                <input type="range" id="salaryGrowth" min="0" max="20" step="0.5" value="8" oninput="userInteracted()">
+            </div>
+            <div class="input-group">
+                <div class="input-header"><span>Savings Rate</span> <span class="val-display" id="valSavingsRate">50%</span></div>
+                <input type="range" id="savingsRate" min="10" max="90" step="5" value="50" oninput="userInteracted()">
+            </div>
+        </div>
+
+        <div class="glass-panel">
+            <h3><span class="material-symbols-outlined">query_stats</span> Wealth Trajectory</h3>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 20px;">
+                Your corpus grows exponentially due to compounding. <strong id="textRetireAge" class="highlight-text">45</strong> is just <span id="yearsLeft">20</span> years away.
+            </p>
+            <div class="chart-wrapper">
+                <canvas id="fireChart"></canvas>
+            </div>
+            <div style="display: flex; justify-content: space-around; margin-top: 15px; padding: 15px; background: rgba(0,0,0,0.3); border-radius: 12px;">
+                <div style="text-align: center;">
+                    <div style="font-size: 1.8rem; font-weight: 700; color: var(--success);" id="fiNumber">₹0Cr</div>
+                    <div style="font-size: 0.8rem; color: var(--text-muted);">FI Number</div>
+                </div>
+                <div style="text-align: center;">
+                    <div style="font-size: 1.8rem; font-weight: 700; color: var(--theme-color);" id="progressText">0%</div>
+                    <div style="font-size: 0.8rem; color: var(--text-muted);">Progress</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="glass-panel">
+            <h3><span class="material-symbols-outlined">verified</span> FIRE Reality Check</h3>
+            
+            <div class="stat-card" style="border-top: 4px solid var(--success);">
+                <div class="stat-label">Target FIRE Corpus</div>
+                <div class="stat-value highlight-text" id="resCorpus">₹0</div>
+                <div class="stat-subtitle">Inflation-adjusted for age <span id="textTarget">45</span></div>
+            </div>
+
+            <div class="stat-card" style="border-top: 4px solid var(--success);">
+                <div class="stat-label">Required Monthly SIP</div>
+                <div class="stat-value" id="resSip" style="color: var(--success);">₹0</div>
+                <div class="stat-subtitle">From current salary/savings rate</div>
+            </div>
+
+            <div class="stat-card" style="border-top: 4px solid var(--theme-color);">
+                <div class="stat-label">Post-FIRE Passive Income</div>
+                <div class="stat-value" id="resPassive">₹0</div>
+                <div class="stat-subtitle"><span id="textSwr">4%</span> safe withdrawal</div>
+            </div>
+
+            <div class="stat-card" style="border-top: 4px solid var(--warning);">
+                <div class="stat-label">Compounding Magic</div>
+                <div class="stat-value" id="resCompound">₹0Cr</div>
+                <div class="stat-subtitle" id="resCompoundPct">0% of total wealth</div>
+            </div>
+
+            <div class="progress-ring">
+                <div class="progress-ring-circle" style="--progress: 0;"></div>
+                <div class="progress-ring-text" id="fiProgress">0%</div>
+            </div>
+
+            <div class="ai-insight">
+                <span class="material-symbols-outlined ai-icon highlight-text">auto_awesome</span>
+                <strong>AI FIRE Coach:</strong> <span id="aiInsight">Loading your personalized plan...</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // 1. INIT & DB LOAD LOGIC
+        // ==========================================
+        let userToken = localStorage.getItem('finwise_token');
+        if (!userToken) {
+            window.location.href = 'login.html';
+        }
+
+        const currencyFmt = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 });
+        const croreFmt = new Intl.NumberFormat('en-IN', { maximumFractionDigits: 1 });
+        
+        let currentMode = 'standard';
+        let currentScenario = 'base';
+        let chartInstance = null;
+        let hasUserFilledData = false;
+
+        const themes = {
+            lean: { id: 'btn-lean', color: '#10b981', glow: 'rgba(16,185,129,0.5)', expenseMultiplier: 0.6 },
+            standard: { id: 'btn-std', color: '#a855f7', glow: 'rgba(168,85,247,0.5)', expenseMultiplier: 1.0 },
+            fat: { id: 'btn-fat', color: '#f59e0b', glow: 'rgba(245,158,11,0.5)', expenseMultiplier: 2.0 }
+        };
+
+        const scenarios = {
+            base: { id: 'scen-base', roi: 12, volatility: 0 },
+            bull: { id: 'scen-bull', roi: 15, volatility: 0 },
+            bear: { id: 'scen-bear', roi: 9, volatility: 0 }
+        };
+
+        async function loadDataFromDB() {
+            try {
+                const res = await fetch('http://localhost:5000/api/snapshot', {
+                    headers: { 'Authorization': `Bearer ${userToken}` }
+                });
+                
+                if (res.ok) {
+                    const dbData = await res.json();
+                    
+                    if (dbData.fireData && Object.keys(dbData.fireData).length > 0) {
+                        const fd = dbData.fireData;
+                        
+                        // Set modes
+                        currentMode = fd.mode || 'standard';
+                        currentScenario = fd.scenario || 'base';
+                        
+                        // Set slider values
+                        if(fd.age) document.getElementById('age').value = fd.age;
+                        if(fd.retireAge) document.getElementById('retireAge').value = fd.retireAge;
+                        if(fd.expenses) document.getElementById('expenses').value = fd.expenses;
+                        if(fd.currentCorpus) document.getElementById('currentCorpus').value = fd.currentCorpus;
+                        if(fd.roi) document.getElementById('roi').value = fd.roi;
+                        if(fd.inflation) document.getElementById('inflation').value = fd.inflation;
+                        if(fd.swr) document.getElementById('swr').value = fd.swr;
+                        if(fd.salaryGrowth) document.getElementById('salaryGrowth').value = fd.salaryGrowth;
+                        if(fd.savingsRate) document.getElementById('savingsRate').value = fd.savingsRate;
+
+                        // Visual Updates
+                        document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
+                        document.getElementById(themes[currentMode].id).classList.add('active');
+                        document.documentElement.style.setProperty('--theme-color', themes[currentMode].color);
+                        document.documentElement.style.setProperty('--theme-glow', themes[currentMode].glow);
+
+                        document.querySelectorAll('.scenario-btn').forEach(btn => btn.classList.remove('active'));
+                        document.getElementById(scenarios[currentScenario].id).classList.add('active');
+
+                        hasUserFilledData = true;
+                    }
+                }
+            } catch(e) {
+                console.error("Failed to load DB data", e);
+            }
+
+            initChart();
+            runSimulation();
+        }
+
+        // ==========================================
+        // 2. DB SAVE LOGIC
+        // ==========================================
+        async function savePlan() {
+            if (!hasUserFilledData) {
+                const btn = document.querySelector('.header-btn.primary');
+                btn.innerHTML = '<span class="material-symbols-outlined">warning</span> Adjust Sliders First';
+                btn.style.background = 'var(--danger)';
+                btn.style.color = 'white';
+                setTimeout(() => {
+                    btn.innerHTML = '<span class="material-symbols-outlined">save</span> Save Plan';
+                    btn.style.background = 'var(--theme-color)';
+                    btn.style.color = '#000';
+                }, 3000);
+                return;
+            }
+
+            const btn = document.querySelector('.header-btn.primary');
+            const origHTML = btn.innerHTML;
+            btn.innerHTML = '<span class="material-symbols-outlined" style="animation: spin 1s linear infinite;">autorenew</span> Saving...';
+
+            const fireDataToSave = {
+                mode: currentMode,
+                scenario: currentScenario,
+                age: document.getElementById('age').value,
+                retireAge: document.getElementById('retireAge').value,
+                expenses: document.getElementById('expenses').value,
+                currentCorpus: document.getElementById('currentCorpus').value,
+                roi: document.getElementById('roi').value,
+                inflation: document.getElementById('inflation').value,
+                swr: document.getElementById('swr').value,
+                salaryGrowth: document.getElementById('salaryGrowth').value,
+                savingsRate: document.getElementById('savingsRate').value
+            };
+
+            try {
+                const res = await fetch('http://localhost:5000/api/snapshot', {
+                    method: 'POST',
+                    headers: { 
+                        'Authorization': `Bearer ${userToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ type: 'fireData', data: fireDataToSave })
+                });
+
+                if (res.ok) {
+                    btn.innerHTML = '<span class="material-symbols-outlined">check_circle</span> Saved to Cloud!';
+                    btn.style.background = 'var(--success)';
+                    btn.style.color = 'white';
+                } else {
+                    throw new Error('Save failed');
+                }
+            } catch(e) {
+                btn.innerHTML = '<span class="material-symbols-outlined">error</span> Error Saving';
+                btn.style.background = 'var(--danger)';
+                btn.style.color = 'white';
+            }
+
+            setTimeout(() => {
+                btn.innerHTML = '<span class="material-symbols-outlined">save</span> Save Plan';
+                btn.style.background = 'var(--theme-color)';
+                btn.style.color = '#000';
+            }, 2500);
+        }
+
+        // ==========================================
+        // 3. UI AND SIMULATION LOGIC
+        // ==========================================
+        function initChart() {
+            const ctx = document.getElementById('fireChart').getContext('2d');
+            Chart.defaults.color = '#94a3b8';
+            Chart.defaults.font.family = 'Inter';
+            
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [
+                        { label: 'Portfolio Growth', data: [], borderColor: themes[currentMode].color, backgroundColor: 'rgba(168,85,247,0.1)', fill: true, tension: 0.4, borderWidth: 4 },
+                        { label: 'Total Invested', data: [], borderColor: '#4ade80', backgroundColor: 'transparent', borderDash: [8, 4], tension: 0.4, borderWidth: 2 }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { position: 'top', labels: { color: '#fff', usePointStyle: true } } },
+                    scales: { 
+                        x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } },
+                        y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8', callback: function(value) { return '₹' + (value/10000000).toFixed(1) + 'Cr'; } } }
+                    }
+                }
+            });
+        }
+
+        function setMode(mode) {
+            currentMode = mode;
+            hasUserFilledData = true;
+            document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(themes[mode].id).classList.add('active');
+            
+            document.documentElement.style.setProperty('--theme-color', themes[mode].color);
+            document.documentElement.style.setProperty('--theme-glow', themes[mode].glow);
+            
+            if (chartInstance) {
+                chartInstance.data.datasets[0].borderColor = themes[mode].color;
+                chartInstance.data.datasets[0].backgroundColor = themes[mode].glow.replace('0.5', '0.1');
+                chartInstance.update();
+            }
+            runSimulation();
+        }
+
+        function setScenario(scenario) {
+            currentScenario = scenario;
+            hasUserFilledData = true;
+            document.querySelectorAll('.scenario-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(scenarios[scenario].id).classList.add('active');
+            document.getElementById('roi').value = scenarios[scenario].roi;
+            runSimulation();
+        }
+
+        function userInteracted() {
+            hasUserFilledData = true;
+            document.getElementById('errorBanner').style.display = 'none';
+            runSimulation();
+        }
+
+        function runSimulation() {
+            const age = parseInt(document.getElementById('age').value);
+            const retireAge = parseInt(document.getElementById('retireAge').value);
+            const baseExpenses = parseInt(document.getElementById('expenses').value);
+            const currentCorpus = parseInt(document.getElementById('currentCorpus').value);
+            const roi = parseFloat(document.getElementById('roi').value) / 100;
+            const inflation = parseFloat(document.getElementById('inflation').value) / 100;
+            const swr = parseFloat(document.getElementById('swr').value) / 100;
+            const salaryGrowth = parseFloat(document.getElementById('salaryGrowth').value) / 100;
+            const savingsRate = parseFloat(document.getElementById('savingsRate').value) / 100;
+
+            if (retireAge <= age) return;
+
+            // Update displays
+            document.getElementById('valAge').innerText = age;
+            document.getElementById('valRetire').innerText = retireAge;
+            document.getElementById('valExp').innerText = currencyFmt.format(baseExpenses);
+            document.getElementById('valCurrent').innerText = currencyFmt.format(currentCorpus);
+            document.getElementById('valRoi').innerText = (roi*100).toFixed(1) + '%';
+            document.getElementById('valInf').innerText = (inflation*100).toFixed(1) + '%';
+            document.getElementById('valSwr').innerText = (swr*100).toFixed(1) + '%';
+            document.getElementById('valSalaryGrowth').innerText = (salaryGrowth*100).toFixed(1) + '%';
+            document.getElementById('valSavingsRate').innerText = (savingsRate*100).toFixed(0) + '%';
+
+            const yearsToFIRE = retireAge - age;
+            document.getElementById('yearsLeft').innerText = yearsToFIRE;
+            document.getElementById('textRetireAge').innerText = retireAge;
+            document.getElementById('textTarget').innerText = retireAge;
+            document.getElementById('textSwr').innerText = (swr*100).toFixed(1) + '%';
+
+            // FIRE Number calculation
+            const adjustedExpenses = baseExpenses * themes[currentMode].expenseMultiplier * 12;
+            const futureExpenses = adjustedExpenses * Math.pow(1 + inflation, yearsToFIRE);
+            const targetCorpus = futureExpenses / swr;
+            const fvCurrentCorpus = currentCorpus * Math.pow(1 + roi, yearsToFIRE);
+            const remainingCorpus = Math.max(0, targetCorpus - fvCurrentCorpus);
+
+            // SIP with growing income
+            let totalSIP = 0;
+            let cumulativeInvested = currentCorpus;
+            let currentPortfolio = currentCorpus;
+            const labels = [];
+            const portfolioData = [];
+            const investedData = [];
+
+            for (let year = 0; year <= yearsToFIRE; year++) {
+                labels.push(`Age ${age + year}`);
+                portfolioData.push(currentPortfolio);
+                investedData.push(cumulativeInvested);
+
+                const annualSIP = baseExpenses * savingsRate * 12 * Math.pow(1 + salaryGrowth, year);
+                totalSIP += annualSIP;
+                cumulativeInvested += annualSIP;
+                currentPortfolio = (currentPortfolio + annualSIP) * (1 + roi);
+            }
+
+            // Update results
+            const monthlySIP = totalSIP / (yearsToFIRE * 12);
+            const futurePassiveIncome = (targetCorpus * swr) / 12;
+            const compoundContribution = targetCorpus - cumulativeInvested;
+            
+            document.getElementById('resCorpus').innerText = currencyFmt.format(targetCorpus);
+            document.getElementById('resSip').innerText = currencyFmt.format(monthlySIP);
+            document.getElementById('resPassive').innerText = currencyFmt.format(futurePassiveIncome);
+            document.getElementById('resCompound').innerText = '₹' + croreFmt.format(compoundContribution/10000000) + 'Cr';
+            document.getElementById('resCompoundPct').innerText = Math.max(0, (compoundContribution/targetCorpus)*100).toFixed(0) + '% of total';
+
+            // Progress calculations
+            const fiProgress = Math.min((currentCorpus / targetCorpus) * 100, 100);
+            document.getElementById('fiProgress').style.setProperty('--progress', fiProgress / 100);
+            document.getElementById('fiProgress').textContent = Math.round(fiProgress) + '%';
+            document.getElementById('fiNumber').innerText = '₹' + croreFmt.format(targetCorpus/10000000) + 'Cr';
+            document.getElementById('progressText').innerText = Math.round(fiProgress) + '%';
+
+            // Chart update
+            if (chartInstance) {
+                chartInstance.data.labels = labels;
+                chartInstance.data.datasets[0].data = portfolioData;
+                chartInstance.data.datasets[1].data = investedData;
+                chartInstance.update();
+            }
+
+            // AI Insights
+            const feasibilityScore = Math.min(100, (savingsRate * 2) + (20 - yearsToFIRE) + (roi * 5));
+            let insight = '';
+            if (feasibilityScore > 85) {
+                insight = `🎉 EXCELLENT PLAN: You're on track for ${currentMode.toUpperCase()} FIRE! Your ${savingsRate*100}% savings rate + ${(roi*100).toFixed(0)}% returns = FI in ${yearsToFIRE} years.`;
+            } else if (feasibilityScore > 65) {
+                insight = `✅ ACHIEVABLE: Increase savings to ${(savingsRate*100+10)}% or target ${(roi*100+2)}% returns to accelerate FIRE by 3 years.`;
+            } else {
+                insight = `⚠️ CHALLENGING: Need ${(savingsRate*100+20)}% savings OR delay FIRE to age ${retireAge+3}. Current trajectory: ${Math.round(feasibilityScore)}% success probability.`;
+            }
+            document.getElementById('aiInsight').innerText = insight;
+        }
+
+        function exportPlan() {
+            const data = {
+                timestamp: new Date().toLocaleString('en-IN'),
+                fireMode: currentMode,
+                scenario: currentScenario,
+                currentAge: document.getElementById('age').value,
+                targetAge: document.getElementById('retireAge').value,
+                targetCorpus: document.getElementById('resCorpus').innerText,
+                monthlySIP: document.getElementById('resSip').innerText,
+                passiveIncome: document.getElementById('resPassive').innerText,
+                progress: document.getElementById('fiProgress').textContent
+            };
+            
+            const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `finwise-fire-plan-${Date.now()}.json`;
+            a.click();
+        }
+
+        // Kick off the load process when DOM is ready
+        document.addEventListener('DOMContentLoaded', loadDataFromDB);
+    </script>
+</body>
+</html>

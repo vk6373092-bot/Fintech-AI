@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portfolio X-Ray Engine | FinWise</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+
+    <style>
+        :root {
+            --bg-deep: #0a0a0f; 
+            --bg-panel: rgba(25, 25, 35, 0.7);
+            --border-glow: rgba(59, 130, 246, 0.2); 
+            --text-main: #ffffff; 
+            --text-muted: #94a3b8;
+            --theme-color: #3b82f6; 
+            --theme-glow: rgba(59, 130, 246, 0.4);
+            --success: #10b981; 
+            --warning: #f59e0b; 
+            --danger: #ef4444;
+            
+            /* Asset Class Colors */
+            --c-large: #3b82f6; /* Blue */
+            --c-mid: #8b5cf6;   /* Purple */
+            --c-gov: #10b981;   /* Green */
+            --c-corp: #facc15;  /* Yellow */
+            --c-alt: #f59e0b;   /* Orange/Gold */
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+        body { background-color: var(--bg-deep); color: var(--text-main); min-height: 100vh; background-image: radial-gradient(circle at 50% 0%, var(--theme-glow), transparent 60%); transition: 0.5s ease; }
+
+        header { display: flex; justify-content: space-between; align-items: center; padding: 20px 40px; background: rgba(10, 10, 15, 0.8); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255,255,255,0.05); position: sticky; top: 0; z-index: 100; }
+        .header-btn { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 10px 16px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.3s; font-weight: 500; position: relative; overflow: hidden; }
+        .header-btn:hover { background: rgba(255,255,255,0.1); transform: translateY(-1px); }
+        .header-btn.primary { background: var(--theme-color); color: white; border: none; box-shadow: 0 4px 15px rgba(59,130,246,0.3); font-weight: 600; }
+        .header-btn.primary:hover { box-shadow: 0 6px 20px rgba(59,130,246,0.4); transform: translateY(-2px); }
+        .header-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        .dashboard-container { max-width: 1600px; margin: 0 auto; padding: 40px; display: grid; grid-template-columns: 350px 1fr 380px; gap: 30px; }
+        .glass-panel { background: var(--bg-panel); backdrop-filter: blur(16px); border: 1px solid var(--border-glow); border-radius: 20px; padding: 30px; box-shadow: 0 8px 32px rgba(0,0,0,0.3); transition: all 0.3s; }
+        .glass-panel:hover { transform: translateY(-2px); box-shadow: 0 12px 40px rgba(0,0,0,0.4); }
+
+        h2, h3 { font-weight: 600; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+        .highlight-text { color: var(--theme-color); }
+
+        /* Sliders */
+        .input-group { margin-bottom: 20px; }
+        .input-header { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.9rem; color: var(--text-muted); }
+        .val-display { color: white; font-weight: 700; font-size: 1rem; }
+        
+        input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; outline: none; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; height: 18px; width: 18px; border-radius: 50%; background: #fff; cursor: pointer; margin-top: -7px; box-shadow: 0 0 10px rgba(0,0,0,0.5); transition: 0.3s; }
+        
+        #s_large::-webkit-slider-thumb { border: 3px solid var(--c-large); }
+        #s_mid::-webkit-slider-thumb { border: 3px solid var(--c-mid); }
+        #s_gov::-webkit-slider-thumb { border: 3px solid var(--c-gov); }
+        #s_corp::-webkit-slider-thumb { border: 3px solid var(--c-corp); }
+        #s_alt::-webkit-slider-thumb { border: 3px solid var(--c-alt); }
+
+        /* Middle Section */
+        .chart-wrapper { height: 320px; width: 100%; position: relative; display: flex; justify-content: center; align-items: center; }
+        
+        .grid-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 30px; text-align: left; }
+        .stat-box { background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.05); padding: 15px; border-radius: 12px; display: flex; flex-direction: column; justify-content: center; transition: all 0.3s; }
+        .stat-box:hover { background: rgba(0,0,0,0.4); transform: translateY(-1px); }
+        .stat-label { font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; }
+        .stat-val { font-size: 1.6rem; font-weight: 800; color: white; }
+
+        /* Right Section: AI & Stress Test */
+        .ai-btn { width: 100%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 12px; border-radius: 8px; font-weight: 500; cursor: pointer; margin-bottom: 10px; transition: 0.3s; display: flex; align-items: center; justify-content: flex-start; gap: 12px; font-size: 0.95rem;}
+        .ai-btn:hover { background: rgba(255,255,255,0.15); border-color: var(--theme-color); transform: translateX(4px); }
+        .ai-btn .icon { font-size: 20px; padding: 6px; border-radius: 6px; }
+
+        .stress-box { background: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.2); padding: 20px; border-radius: 12px; margin-top: 20px; text-align: center; transition: 0.3s;}
+        .stress-val { font-size: 3rem; font-weight: 800; color: var(--danger); margin: 5px 0; line-height: 1;}
+        
+        .scenario-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 15px; }
+        .scen-btn { background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); color: var(--text-muted); padding: 8px; border-radius: 8px; cursor: pointer; font-size: 0.75rem; transition: 0.3s; font-weight: 600;}
+        .scen-btn:hover { background: rgba(255,255,255,0.1); }
+        .scen-btn.active { background: rgba(239, 68, 68, 0.15); color: white; border-color: var(--danger); }
+
+        /* PDF Export Progress */
+        .export-progress { position: fixed; top: 20px; right: 20px; background: rgba(0,0,0,0.9); backdrop-filter: blur(10px); padding: 15px 20px; border-radius: 12px; border: 1px solid var(--theme-color); color: white; font-size: 0.85rem; z-index: 1000; display: none; }
+        .progress-bar { height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden; margin-top: 8px; }
+        .progress-fill { height: 100%; background: var(--theme-color); border-radius: 2px; transition: width 0.3s; width: 0%; }
+
+        @media (max-width: 1400px) { .dashboard-container { grid-template-columns: 1fr 1fr; } .glass-panel:last-child { grid-column: 1 / -1; } }
+        @media (max-width: 900px) { .dashboard-container { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+
+    <!-- PDF Export Progress -->
+    <div id="exportProgress" class="export-progress">
+        <div>Generating PDF Report...</div>
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+        </div>
+    </div>
+
+    <header>
+        <button class="header-btn" onclick="window.location.href='index.html'">
+            <span class="material-symbols-outlined">arrow_back</span> Dashboard
+        </button>
+        <h1 style="font-size: 1.5rem; font-weight: 700; display: flex; align-items: center; gap: 10px;">
+            <span class="material-symbols-outlined highlight-text" style="font-size: 28px;">troubleshoot</span> Portfolio X-Ray Engine
+        </h1>
+        <button class="header-btn primary" id="exportBtn" onclick="exportPDF()">
+            <span class="material-symbols-outlined">picture_as_pdf</span> Export PDF
+        </button>
+    </header>
+
+    <div class="dashboard-container">
+        <div class="glass-panel">
+            <h3><span class="material-symbols-outlined highlight-text">tune</span> Asset Weighting</h3>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 25px;">Engine automatically normalizes inputs to 100%.</p>
+            
+            <div style="margin-bottom: 15px; font-weight: 600; color: white; font-size: 0.9rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px;">Equities (Growth)</div>
+            <div class="input-group">
+                <div class="input-header"><span>Large Cap (Nifty 50)</span> <span class="val-display" id="v_large" style="color: var(--c-large);">40.0%</span></div>
+                <input type="range" id="s_large" min="0" max="100" value="40" oninput="runXray()">
+            </div>
+            <div class="input-group">
+                <div class="input-header"><span>Mid/Small Cap</span> <span class="val-display" id="v_mid" style="color: var(--c-mid);">20.0%</span></div>
+                <input type="range" id="s_mid" min="0" max="100" value="20" oninput="runXray()">
+            </div>
+
+            <div style="margin-top: 30px; margin-bottom: 15px; font-weight: 600; color: white; font-size: 0.9rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px;">Fixed Income (Safety)</div>
+            <div class="input-group">
+                <div class="input-header"><span>Govt Bonds / G-Sec</span> <span class="val-display" id="v_gov" style="color: var(--c-gov);">20.0%</span></div>
+                <input type="range" id="s_gov" min="0" max="100" value="20" oninput="runXray()">
+            </div>
+            <div class="input-group">
+                <div class="input-header"><span>Corporate Debt</span> <span class="val-display" id="v_corp" style="color: var(--c-corp);">10.0%</span></div>
+                <input type="range" id="s_corp" min="0" max="100" value="10" oninput="runXray()">
+            </div>
+
+            <div style="margin-top: 30px; margin-bottom: 15px; font-weight: 600; color: white; font-size: 0.9rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px;">Alternatives (Hedge)</div>
+            <div class="input-group">
+                <div class="input-header"><span>Gold / REITs</span> <span class="val-display" id="v_alt" style="color: var(--c-alt);">10.0%</span></div>
+                <input type="range" id="s_alt" min="0" max="100" value="10" oninput="runXray()">
+            </div>
+        </div>
+
+        <div class="glass-panel" style="display: flex; flex-direction: column;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h3><span class="material-symbols-outlined">donut_large</span> Composition</h3>
+                <span id="riskBadge" style="background: rgba(59,130,246,0.2); color: var(--theme-color); padding: 6px 12px; border-radius: 8px; font-size: 0.85rem; font-weight: bold; border: 1px solid rgba(59,130,246,0.5);">Moderate</span>
+            </div>
+            
+            <div class="chart-wrapper">
+                <canvas id="donutChart"></canvas>
+            </div>
+
+            <div class="grid-stats">
+                <div class="stat-box">
+                    <div class="stat-label">Expected Return (CAGR)</div>
+                    <div class="stat-val" id="statCagr" style="color: var(--success);">11.6%</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Risk (Annual Volatility)</div>
+                    <div class="stat-val" id="statVol">13.2%</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Sharpe Ratio</div>
+                    <div class="stat-val" id="statSharpe" style="color: var(--theme-color);">1.24</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">ESG Impact Score</div>
+                    <div class="stat-val" id="statEsg">72/100</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="glass-panel">
+            <h3><span class="material-symbols-outlined highlight-text">psychology</span> AI Rebalancer</h3>
+            
+            <button class="ai-btn" onclick="aiRebalance([30, 10, 30, 20, 10], 'shield', 'var(--success)')">
+                <span class="material-symbols-outlined icon" style="background: rgba(16, 185, 129, 0.2); color: var(--success);">shield</span>
+                <div>
+                    <div style="font-weight: 600;">Capital Shield</div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 400;">Minimize risk, preserve wealth</div>
+                </div>
+            </button>
+            
+            <button class="ai-btn" onclick="aiRebalance([40, 10, 20, 15, 15], 'all_inclusive', 'var(--theme-color)')">
+                <span class="material-symbols-outlined icon" style="background: rgba(59, 130, 246, 0.2); color: var(--theme-color);">all_inclusive</span>
+                <div>
+                    <div style="font-weight: 600;">All-Weather (Dalio)</div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 400;">Balanced across all economic seasons</div>
+                </div>
+            </button>
+
+            <button class="ai-btn" onclick="aiRebalance([50, 40, 0, 0, 10], 'rocket_launch', 'var(--warning)')">
+                <span class="material-symbols-outlined icon" style="background: rgba(245, 158, 11, 0.2); color: var(--warning);">rocket_launch</span>
+                <div>
+                    <div style="font-weight: 600;">Maximum Growth</div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 400;">High risk, maximum returns</div>
+                </div>
+            </button>
+
+            <h3 style="margin-top: 35px;"><span class="material-symbols-outlined" style="color: var(--danger);">warning</span> Crash Simulator</h3>
+            
+            <div class="scenario-grid">
+                <button class="scen-btn" id="btn-2000" onclick="setScenario('2000')">2000 Dot-Com</button>
+                <button class="scen-btn active" id="btn-2008" onclick="setScenario('2008')">2008 Fin Crisis</button>
+                <button class="scen-btn" id="btn-2020" onclick="setScenario('2020')">2020 COVID</button>
+            </div>
+
+            <div class="stress-box" id="stressBox">
+                <div style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600;">Max Drawdown (Loss)</div>
+                <div class="stress-val" id="stressVal">-27.1%</div>
+                <div style="font-size: 0.85rem; color: var(--text-muted);" id="stressText">Estimated recovery time: 2.3 years.</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let chartInstance = null;
+        let currentScenario = '2008';
+
+        // Advanced Institutional Metrics
+        const metrics = {
+            large: { ret: 12.0, vol: 15.0, div: 1.5, esg: 75, drop00: -45.0, drop08: -52.0, drop20: -34.0 },
+            mid:   { ret: 16.0, vol: 24.0, div: 1.0, esg: 60, drop00: -55.0, drop08: -65.0, drop20: -42.0 },
+            gov:   { ret: 7.0,  vol: 4.0,  div: 7.0, esg: 85, drop00:  12.0, drop08:  8.0,  drop20:  5.0  },
+            corp:  { ret: 9.0,  vol: 8.0,  div: 8.5, esg: 70, drop00: -5.0,  drop08: -10.0, drop20: -12.0 },
+            alt:   { ret: 8.5,  vol: 12.0, div: 2.0, esg: 50, drop00: -2.0,  drop08:  5.0,  drop20:  15.0 }
+        };
+
+        const RISK_FREE_RATE = 6.0; 
+
+        function initChart() {
+            const ctx = document.getElementById('donutChart').getContext('2d');
+            Chart.defaults.color = '#94a3b8';
+            Chart.defaults.font.family = 'Inter';
+            
+            chartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Large Cap', 'Mid/Small Cap', 'Govt Bonds', 'Corp Debt', 'Alternatives'],
+                    datasets: [{
+                        data: [40, 20, 20, 10, 10],
+                        backgroundColor: ['#3b82f6', '#8b5cf6', '#10b981', '#facc15', '#f59e0b'],
+                        borderWidth: 2,
+                        borderColor: '#0a0a0f',
+                        cutout: '75%',
+                        hoverOffset: 8
+                    }]
+                },
+                options: { 
+                    responsive: true, maintainAspectRatio: false, 
+                    plugins: { legend: { position: 'bottom', labels: { color: '#fff', padding: 15, boxWidth: 12, font: {size: 11} } } } 
+                }
+            });
+        }
+
+        function setScenario(year) {
+            currentScenario = year;
+            document.querySelectorAll('.scen-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById('btn-' + year).classList.add('active');
+            runXray();
+        }
+
+        function aiRebalance(values, iconName, color) {
+            document.getElementById('s_large').value = values[0];
+            document.getElementById('s_mid').value = values[1];
+            document.getElementById('s_gov').value = values[2];
+            document.getElementById('s_corp').value = values[3];
+            document.getElementById('s_alt').value = values[4];
+            runXray();
+        }
+
+        function runXray() {
+            // 1. Get raw slider values
+            const rawL = parseInt(document.getElementById('s_large').value);
+            const rawM = parseInt(document.getElementById('s_mid').value);
+            const rawG = parseInt(document.getElementById('s_gov').value);
+            const rawC = parseInt(document.getElementById('s_corp').value);
+            const rawA = parseInt(document.getElementById('s_alt').value);
+
+            // 2. Normalize to 100%
+            const totalRaw = rawL + rawM + rawG + rawC + rawA;
+            if(totalRaw === 0) return;
+
+            const pL = rawL / totalRaw;
+            const pM = rawM / totalRaw;
+            const pG = rawG / totalRaw;
+            const pC = rawC / totalRaw;
+            const pA = rawA / totalRaw;
+
+            // Update UI percentages
+            document.getElementById('v_large').innerText = (pL * 100).toFixed(1) + '%';
+            document.getElementById('v_mid').innerText = (pM * 100).toFixed(1) + '%';
+            document.getElementById('v_gov').innerText = (pG * 100).toFixed(1) + '%';
+            document.getElementById('v_corp').innerText = (pC * 100).toFixed(1) + '%';
+            document.getElementById('v_alt').innerText = (pA * 100).toFixed(1) + '%';
+
+            // 3. Math: Weighted Averages
+            const cagr = (pL * metrics.large.ret) + (pM * metrics.mid.ret) + (pG * metrics.gov.ret) + (pC * metrics.corp.ret) + (pA * metrics.alt.ret);
+            const vol = (pL * metrics.large.vol) + (pM * metrics.mid.vol) + (pG * metrics.gov.vol) + (pC * metrics.corp.vol) + (pA * metrics.alt.vol);
+            const esg = (pL * metrics.large.esg) + (pM * metrics.mid.esg) + (pG * metrics.gov.esg) + (pC * metrics.corp.esg) + (pA * metrics.alt.esg);
+            
+            // Sharpe Ratio = (Return - RiskFreeRate) / Volatility
+            const sharpe = vol > 0 ? (cagr - RISK_FREE_RATE) / vol : 0;
+
+            document.getElementById('statCagr').innerText = cagr.toFixed(1) + '%';
+            document.getElementById('statVol').innerText = vol.toFixed(1) + '%';
+            document.getElementById('statSharpe').innerText = sharpe.toFixed(2);
+            document.getElementById('statEsg').innerText = Math.round(esg) + '/100';
+
+            // 4. Update Risk Badge
+            const eqTotal = (pL + pM) * 100;
+            const badge = document.getElementById('riskBadge');
+            if(eqTotal >= 75) { 
+                badge.innerText = "Aggressive"; badge.style.color = "var(--danger)"; badge.style.background = "rgba(239, 68, 68, 0.15)"; badge.style.borderColor = "var(--danger)";
+            } else if(eqTotal >= 40) { 
+                badge.innerText = "Moderate"; badge.style.color = "var(--theme-color)"; badge.style.background = "rgba(59, 130, 246, 0.15)"; badge.style.borderColor = "var(--theme-color)";
+            } else { 
+                badge.innerText = "Conservative"; badge.style.color = "var(--success)"; badge.style.background = "rgba(16, 185, 129, 0.15)"; badge.style.borderColor = "var(--success)";
+            }
+
+            // 5. Crash Simulator Math
+            let drop = 0;
+            if(currentScenario === '2000') {
+                drop = (pL * metrics.large.drop00) + (pM * metrics.mid.drop00) + (pG * metrics.gov.drop00) + (pC * metrics.corp.drop00) + (pA * metrics.alt.drop00);
+            } else if(currentScenario === '2008') {
+                drop = (pL * metrics.large.drop08) + (pM * metrics.mid.drop08) + (pG * metrics.gov.drop08) + (pC * metrics.corp.drop08) + (pA * metrics.alt.drop08);
+            } else {
+                drop = (pL * metrics.large.drop20) + (pM * metrics.mid.drop20) + (pG * metrics.gov.drop20) + (pC * metrics.corp.drop20) + (pA * metrics.alt.drop20);
+            }
+
+            const stressValEl = document.getElementById('stressVal');
+            const stressBoxEl = document.getElementById('stressBox');
+            
+            if (drop < 0) {
+                stressValEl.innerText = drop.toFixed(1) + '%';
+                stressValEl.style.color = 'var(--danger)';
+                stressBoxEl.style.background = 'rgba(239, 68, 68, 0.05)';
+                stressBoxEl.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+                
+                // Rule of thumb recovery time
+                const recoveryYrs = (Math.abs(drop) / cagr) * 1.2; 
+                document.getElementById('stressText').innerText = `Estimated recovery time: ${recoveryYrs.toFixed(1)} years.`;
+            } else {
+                stressValEl.innerText = '+' + drop.toFixed(1) + '%';
+                stressValEl.style.color = 'var(--success)';
+                stressBoxEl.style.background = 'rgba(16, 185, 129, 0.05)';
+                stressBoxEl.style.borderColor = 'rgba(16, 185, 129, 0.3)';
+                document.getElementById('stressText').innerText = `Portfolio is heavily shielded.`;
+            }
+
+            // 6. Update Chart
+            if(chartInstance) {
+                chartInstance.data.datasets[0].data = [(pL*100).toFixed(1), (pM*100).toFixed(1), (pG*100).toFixed(1), (pC*100).toFixed(1), (pA*100).toFixed(1)];
+                chartInstance.update('none'); // Fast update
+            }
+        }
+
+        // 🚀 NEW FEATURE: Professional PDF Export
+        async function exportPDF() {
+            const exportBtn = document.getElementById('exportBtn');
+            const originalText = exportBtn.innerHTML;
+            const progressEl = document.getElementById('exportProgress');
+            const progressFill = document.getElementById('progressFill');
+            
+            // Show progress
+            exportBtn.disabled = true;
+            exportBtn.innerHTML = '<span class="material-symbols-outlined">hourglass_empty</span> Exporting...';
+            progressEl.style.display = 'block';
+            
+            try {
+                // Step 1: Capture chart as high-res image
+                progressFill.style.width = '30%';
+                const chartCanvas = document.getElementById('donutChart');
+                const chartImage = chartCanvas.toDataURL('image/png', 3.0); // High quality
+
+                // Step 2: Create PDF
+                progressFill.style.width = '60%';
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF('p', 'mm', 'a4');
+                
+                // Title & Header
+                pdf.setFontSize(22);
+                pdf.setFont(undefined, 'bold');
+                pdf.text('Portfolio X-Ray Report', 20, 25);
+                pdf.setFontSize(10);
+                pdf.setFont(undefined, 'normal');
+                pdf.text(`Generated: ${new Date().toLocaleString('en-IN')}`, 20, 35);
+                
+                // Portfolio Composition Chart
+                progressFill.style.width = '75%';
+                pdf.addImage(chartImage, 'PNG', 20, 45, 170, 110);
+                
+                // Key Metrics Table
+                progressFill.style.width = '85%';
+                pdf.setFontSize(14);
+                pdf.setFont(undefined, 'bold');
+                pdf.text('Portfolio Metrics', 20, 175);
+                
+                pdf.setFontSize(11);
+                pdf.setFont(undefined, 'normal');
+                const metricsText = [
+                    `Expected CAGR: ${document.getElementById('statCagr').innerText}`,
+                    `Volatility: ${document.getElementById('statVol').innerText}`,
+                    `Sharpe Ratio: ${document.getElementById('statSharpe').innerText}`,
+                    `ESG Score: ${document.getElementById('statEsg').innerText}`,
+                    `Risk Profile: ${document.getElementById('riskBadge').innerText}`,
+                    `Scenario: ${currentScenario}`
+                ];
+                metricsText.forEach((line, i) => {
+                    pdf.text(line, 20, 195 + (i * 6));
+                });
+                
+                // Stress Test Results
+                progressFill.style.width = '95%';
+                pdf.setFontSize(14);
+                pdf.setFont(undefined, 'bold');
+                pdf.text('Crash Test Results', 20, 235);
+                pdf.setFontSize(11);
+                pdf.text(document.getElementById('stressText').innerText, 20, 250);
+                pdf.text(`Max Drawdown (${currentScenario}): ${document.getElementById('stressVal').innerText}`, 20, 260);
+                
+                // Asset Allocation Table
+                pdf.setFontSize(14);
+                pdf.setFont(undefined, 'bold');
+                pdf.text('Current Allocation', 20, 280);
+                pdf.setFontSize(10);
+                const allocations = [
+                    'Large Cap: ' + document.getElementById('v_large').innerText,
+                    'Mid/Small: ' + document.getElementById('v_mid').innerText,
+                    'Govt Bonds: ' + document.getElementById('v_gov').innerText,
+                    'Corp Debt: ' + document.getElementById('v_corp').innerText,
+                    'Alternatives: ' + document.getElementById('v_alt').innerText
+                ];
+                allocations.forEach((line, i) => {
+                    pdf.text(line, 20, 295 + (i * 5));
+                });
+
+                // Save PDF
+                progressFill.style.width = '100%';
+                const filename = `FinWise-Portfolio-XRay-${new Date().toISOString().slice(0,10)}.pdf`;
+                pdf.save(filename);
+                
+            } catch (error) {
+                console.error('PDF Export failed:', error);
+                alert('PDF export failed. Please try again.');
+            }
+
+            // Reset UI
+            setTimeout(() => {
+                exportBtn.innerHTML = originalText;
+                exportBtn.disabled = false;
+                progressEl.style.display = 'none';
+                progressFill.style.width = '0%';
+            }, 1500);
+        }
+
+        window.onload = () => { initChart(); runXray(); };
+    </script>
+</body>
+</html>

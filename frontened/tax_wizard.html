@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tax Optimizer AI | FinWise</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+
+    <style>
+        :root { 
+            --bg-deep: #0a0a0f; 
+            --theme: #10b981; 
+            --theme-glow: rgba(16, 185, 129, 0.3); 
+            --text: #fff; 
+            --text-muted: #94a3b8; 
+            --card: rgba(25,25,35,0.8); 
+            --danger: #ef4444;
+            --accent-blue: #3b82f6;
+        }
+        
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+        
+        body { 
+            background: var(--bg-deep); 
+            color: var(--text); 
+            padding: 40px; 
+            background-image: radial-gradient(circle at 50% 0%, var(--theme-glow), transparent 60%); 
+        }
+        
+        /* --- Horizontal Header Toolbar --- */
+        header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            padding: 15px 0; 
+            margin-bottom: 30px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .header-left { display: flex; align-items: center; gap: 20px; }
+        
+        .header-action-group { display: flex; align-items: center; gap: 12px; }
+
+        .sync-indicator { 
+            display: flex; align-items: center; gap: 8px; 
+            padding-right: 15px; font-size: 0.85rem; color: var(--text-muted); 
+            border-right: 1px solid rgba(255,255,255,0.1); 
+        }
+
+        .btn { 
+            background: rgba(255,255,255,0.05); 
+            color: white; padding: 10px 18px; 
+            border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); 
+            cursor: pointer; display: flex; align-items: center; gap: 8px; 
+            transition: 0.3s; font-weight: 600; font-size: 0.9rem;
+        }
+        .btn:hover { background: rgba(255,255,255,0.1); transform: translateY(-1px); }
+
+        /* --- Dashboard Grid --- */
+        .grid { display: grid; grid-template-columns: 1fr 1.2fr; gap: 30px; max-width: 1400px; margin: 0 auto; }
+        .card { background: var(--card); padding: 30px; border-radius: 24px; border: 1px solid rgba(255,255,255,0.05); backdrop-filter: blur(16px); }
+        
+        .input-group { margin-bottom: 25px; }
+        .input-group label { display: flex; justify-content: space-between; margin-bottom: 10px; color: var(--text-muted); font-size: 0.9rem; }
+        .input-group span { color: var(--theme); font-weight: bold; }
+        
+        input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 4px; background: rgba(255,255,255,0.1); outline: none; border-radius: 2px; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 18px; height: 18px; border-radius: 50%; background: #fff; border: 3px solid var(--theme); cursor: pointer; box-shadow: 0 0 10px var(--theme-glow); margin-top: -7px; transition: 0.2s; }
+        
+        /* --- Results UI --- */
+        .comparison { display: flex; gap: 15px; margin: 20px 0; }
+        .tax-box { flex: 1; padding: 20px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); text-align: center; background: rgba(0,0,0,0.2); transition: 0.3s; }
+        .tax-box.winner { border-color: var(--theme); background: rgba(16, 185, 129, 0.05); }
+        .tax-val { font-size: 1.8rem; font-weight: 800; margin: 5px 0; }
+
+        .ai-box { 
+            background: rgba(16, 185, 129, 0.05); 
+            border-left: 4px solid var(--theme); 
+            padding: 20px; border-radius: 12px; margin: 20px 0; 
+            font-size: 0.9rem; line-height: 1.5;
+        }
+
+        .breakdown-row { display: flex; justify-content: space-between; padding: 15px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .breakdown-label { color: var(--text-muted); font-size: 0.9rem; }
+        .breakdown-val { font-weight: 700; color: var(--text); }
+
+        .history-section { margin-top: 35px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 25px; }
+        .history-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-top: 15px; }
+        .history-table td { padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+
+        /* --- NEW: Form 16 Dropzone Styles --- */
+        .upload-zone {
+            border: 2px dashed rgba(59, 130, 246, 0.4);
+            background: rgba(59, 130, 246, 0.05);
+            border-radius: 16px;
+            padding: 30px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            margin-bottom: 35px;
+        }
+        .upload-zone:hover {
+            background: rgba(59, 130, 246, 0.1);
+            border-color: var(--accent-blue);
+            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.15);
+        }
+        .upload-icon {
+            font-size: 42px;
+            color: var(--accent-blue);
+            margin-bottom: 10px;
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .upload-zone:hover .upload-icon {
+            transform: scale(1.15) translateY(-5px);
+        }
+        .upload-title {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 5px;
+        }
+        .upload-subtitle {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+        /* AI Progress Bar */
+        .progress-container {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: rgba(255,255,255,0.05);
+            display: none;
+        }
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--accent-blue), #8b5cf6);
+            transition: width 3s linear;
+        }
+        .uploading-state, .success-state { display: none; }
+
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        .spinning { animation: spin 1.5s linear infinite; }
+
+        @media (max-width: 1000px) { .grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div style="max-width: 1400px; margin: 0 auto;">
+        <header>
+            <div class="header-left">
+                <button class="btn" onclick="window.location.href='index.html'">
+                    <span class="material-symbols-outlined">arrow_back</span> Dashboard
+                </button>
+                <h1 style="font-weight: 800; font-size: 1.6rem;">Tax Optimizer AI</h1>
+            </div>
+
+            <div class="header-action-group">
+                <div class="sync-indicator">
+                    <span id="syncStatus">Cloud Synced</span>
+                    <span class="material-symbols-outlined" style="color: #22c55e; font-size: 20px;">cloud_done</span>
+                </div>
+                <button class="btn" id="syncBtn" onclick="saveToDB()">
+                    <span class="material-symbols-outlined">cloud_upload</span> Save Plan
+                </button>
+                <button class="btn" onclick="window.print()">
+                    <span class="material-symbols-outlined">download</span> Export
+                </button>
+            </div>
+        </header>
+
+        <div class="grid">
+            <div class="card">
+                
+                <div class="upload-zone" onclick="document.getElementById('form16Upload').click()" id="dropZone">
+                    <input type="file" id="form16Upload" accept=".pdf" style="display: none;" onchange="handleForm16Upload(this)">
+                    
+                    <div id="uploadStateDefault">
+                        <span class="material-symbols-outlined upload-icon">document_scanner</span>
+                        <div class="upload-title">Auto-Fill with Form 16 AI</div>
+                        <div class="upload-subtitle">Click to browse or drag & drop your PDF here</div>
+                    </div>
+
+                    <div id="uploadStateProcessing" class="uploading-state">
+                        <span class="material-symbols-outlined upload-icon spinning" style="color: #8b5cf6;">auto_awesome</span>
+                        <div class="upload-title" style="color: #8b5cf6;">AI is extracting data...</div>
+                        <div class="upload-subtitle">Scanning income and deductions</div>
+                    </div>
+
+                    <div id="uploadStateSuccess" class="success-state">
+                        <span class="material-symbols-outlined upload-icon" style="color: var(--theme);">check_circle</span>
+                        <div class="upload-title" style="color: var(--theme);">Optimization Complete!</div>
+                        <div class="upload-subtitle">Sliders have been updated.</div>
+                    </div>
+
+                    <div class="progress-container" id="progressContainer">
+                        <div class="progress-bar" id="progressBar"></div>
+                    </div>
+                </div>
+                <h3 style="margin-bottom: 25px;"><span class="material-symbols-outlined" style="color:var(--accent-blue); vertical-align: middle;">payments</span> Income Details</h3>
+                
+                <div class="input-group">
+                    <label>Gross Annual Salary <span id="valSal">₹ 0</span></label>
+                    <input type="range" id="salary" min="500000" max="5000000" step="50000" value="1500000" oninput="calcTax()">
+                </div>
+
+                <h3 style="margin: 30px 0 20px 0;"><span class="material-symbols-outlined" style="color:var(--theme); vertical-align: middle;">Shield</span> Deductions (Old Regime)</h3>
+                
+                <div class="input-group">
+                    <label>Section 80C (ELSS, PPF, LIC) <span id="val80c">₹ 0</span></label>
+                    <input type="range" id="sec80c" min="0" max="150000" step="5000" value="150000" oninput="calcTax()">
+                </div>
+                <div class="input-group">
+                    <label>Section 80D (Health Insurance) <span id="val80d">₹ 0</span></label>
+                    <input type="range" id="sec80d" min="0" max="75000" step="5000" value="25000" oninput="calcTax()">
+                </div>
+                <div class="input-group">
+                    <label>HRA / Home Loan Interest <span id="valHra">₹ 0</span></label>
+                    <input type="range" id="hra" min="0" max="500000" step="10000" value="100000" oninput="calcTax()">
+                </div>
+            </div>
+
+            <div class="card">
+                <h3><span class="material-symbols-outlined" style="color:var(--theme); vertical-align: middle;">insights</span> Optimization Summary</h3>
+                
+                <div class="comparison">
+                    <div class="tax-box" id="boxOld">
+                        <div style="color: var(--text-muted); font-size: 0.8rem;">Old Regime</div>
+                        <div class="tax-val" id="taxOld">₹ 0</div>
+                    </div>
+                    <div class="tax-box" id="boxNew">
+                        <div style="color: var(--text-muted); font-size: 0.8rem;">New Regime</div>
+                        <div class="tax-val" id="taxNew">₹ 0</div>
+                    </div>
+                </div>
+
+                <div class="ai-box">
+                    <strong style="display: flex; align-items: center; gap: 8px;">
+                        <span class="material-symbols-outlined">smart_toy</span> Tax Agent Analysis
+                    </strong>
+                    <p id="aiRecommendation" style="margin-top: 8px;">Calculating the best route for your income...</p>
+                </div>
+
+                <div class="breakdown-row">
+                    <span class="breakdown-label">Estimated Monthly TDS</span>
+                    <span class="breakdown-val" id="monthlyTDS">₹ 0</span>
+                </div>
+                <div class="breakdown-row">
+                    <span class="breakdown-label">Effective Tax Bracket</span>
+                    <span class="breakdown-val" id="taxSlab" style="color:var(--theme)">0%</span>
+                </div>
+
+                <div style="height: 220px; margin-top: 20px;">
+                    <canvas id="taxChart"></canvas>
+                </div>
+
+                <div class="history-section">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <h3 style="display: flex; align-items: center; gap: 5px;"><span class="material-symbols-outlined">history</span> History</h3>
+                        <button class="btn" style="height:28px; font-size:0.7rem; color:var(--danger); border-color:var(--danger);" onclick="clearHistory()">Clear All</button>
+                    </div>
+                    <table class="history-table">
+                        <tbody id="historyBody">
+                            <tr><td style="text-align:center; color:var(--text-muted); padding:20px;">No history found.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const fmt = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 });
+        const token = localStorage.getItem('finwise_token');
+        let chart;
+        let planningHistory = [];
+
+        function initChart() {
+            const ctx = document.getElementById('taxChart').getContext('2d');
+            chart = new Chart(ctx, {
+                type: 'bar',
+                data: { 
+                    labels: ['Old Regime', 'New Regime'], 
+                    datasets: [{ data: [0,0], backgroundColor: ['#3b82f6', '#10b981'], borderRadius: 8 }] 
+                },
+                options: { 
+                    responsive: true, maintainAspectRatio: false, 
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { display: false } }, x: { grid: { display: false } } }
+                }
+            });
+        }
+
+        // --- REWRITTEN: Form 16 Advanced Upload Logic ---
+        function handleForm16Upload(input) {
+            if (!input.files || input.files.length === 0) return;
+            
+            const dropZone = document.getElementById('dropZone');
+            const stateDefault = document.getElementById('uploadStateDefault');
+            const stateProcessing = document.getElementById('uploadStateProcessing');
+            const stateSuccess = document.getElementById('uploadStateSuccess');
+            const progContainer = document.getElementById('progressContainer');
+            const progBar = document.getElementById('progressBar');
+
+            // 1. Prevent multiple clicks
+            dropZone.style.pointerEvents = 'none';
+
+            // 2. Switch UI to Processing State
+            stateDefault.style.display = 'none';
+            stateProcessing.style.display = 'block';
+            dropZone.style.borderColor = '#8b5cf6'; // Purple AI theme
+            dropZone.style.background = 'rgba(139, 92, 246, 0.05)';
+            
+            // 3. Start Progress Bar Animation
+            progContainer.style.display = 'block';
+            // small delay to allow CSS to register the display block before animating width
+            setTimeout(() => { progBar.style.width = '100%'; }, 50); 
+
+            // 4. Simulate the 3-second backend AI parsing
+            setTimeout(() => {
+                // Apply Mock Extracted Data
+                document.getElementById('salary').value = 2650000;
+                document.getElementById('sec80c').value = 125000;
+                document.getElementById('sec80d').value = 45000;
+                document.getElementById('hra').value = 240000;
+                
+                // Recalculate everything
+                calcTax();
+
+                // 5. Switch UI to Success State
+                stateProcessing.style.display = 'none';
+                stateSuccess.style.display = 'block';
+                dropZone.style.borderColor = 'var(--theme)'; // Green theme
+                dropZone.style.background = 'rgba(16, 185, 129, 0.05)';
+                progContainer.style.display = 'none';
+                
+                // 6. Reset back to default after 2.5 seconds
+                setTimeout(() => {
+                    stateSuccess.style.display = 'none';
+                    stateDefault.style.display = 'block';
+                    dropZone.style.borderColor = 'rgba(59, 130, 246, 0.4)'; // Back to blue
+                    dropZone.style.background = 'rgba(59, 130, 246, 0.05)';
+                    progBar.style.width = '0%'; // Reset bar width invisibly
+                    dropZone.style.pointerEvents = 'auto'; // Re-enable clicks
+                    input.value = ''; // Clear file input
+                }, 2500);
+
+            }, 3000);
+        }
+
+        // Allow drag and drop visual hint (Bonus UX)
+        const dropZone = document.getElementById('dropZone');
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.style.borderColor = 'var(--accent-blue)';
+            dropZone.style.background = 'rgba(59, 130, 246, 0.1)';
+        });
+        dropZone.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            dropZone.style.borderColor = 'rgba(59, 130, 246, 0.4)';
+            dropZone.style.background = 'rgba(59, 130, 246, 0.05)';
+        });
+        // --- END REWRITTEN LOGIC ---
+
+        async function loadFromDB() {
+            if(!token) return;
+            try {
+                const res = await fetch('http://localhost:5000/api/snapshot', { headers: { 'Authorization': `Bearer ${token}` } });
+                const snapshot = await res.json();
+                if (snapshot.taxData) {
+                    const d = snapshot.taxData;
+                    document.getElementById('salary').value = d.salary || 1500000;
+                    document.getElementById('sec80c').value = d.sec80c || 150000;
+                    document.getElementById('sec80d').value = d.sec80d || 25000;
+                    document.getElementById('hra').value = d.hra || 100000;
+                    planningHistory = d.planningHistory || [];
+                    renderHistory();
+                    calcTax();
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        async function saveToDB() {
+            if(!token) return alert("Please Login.");
+            const best = document.getElementById('taxOld').innerText < document.getElementById('taxNew').innerText ? "Old" : "New";
+            const log = {
+                date: new Date().toLocaleDateString(),
+                salary: fmt.format(document.getElementById('salary').value),
+                regime: best
+            };
+            planningHistory.unshift(log);
+            if(planningHistory.length > 5) planningHistory.pop();
+
+            const payload = {
+                type: 'taxData',
+                data: {
+                    salary: document.getElementById('salary').value,
+                    sec80c: document.getElementById('sec80c').value,
+                    sec80d: document.getElementById('sec80d').value,
+                    hra: document.getElementById('hra').value,
+                    planningHistory
+                }
+            };
+
+            document.getElementById('syncBtn').innerText = "Syncing...";
+            await fetch('http://localhost:5000/api/snapshot', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify(payload)
+            });
+            document.getElementById('syncBtn').innerHTML = `<span class="material-symbols-outlined">cloud_done</span> Saved`;
+            renderHistory();
+            setTimeout(() => document.getElementById('syncBtn').innerHTML = `<span class="material-symbols-outlined">cloud_upload</span> Save Plan`, 2000);
+        }
+
+        function renderHistory() {
+            const body = document.getElementById('historyBody');
+            if(planningHistory.length === 0) return;
+            body.innerHTML = planningHistory.map(h => `
+                <tr><td>${h.date}</td><td>${h.salary} Income</td><td style="color:var(--theme); text-align:right;">Best: ${h.regime}</td></tr>
+            `).join('');
+        }
+
+        function clearHistory() {
+            if(confirm("Wipe history?")) { planningHistory = []; renderHistory(); saveToDB(); }
+        }
+
+        function calcTax() {
+            const sal = parseInt(document.getElementById('salary').value);
+            const c80 = parseInt(document.getElementById('sec80c').value);
+            const d80 = parseInt(document.getElementById('sec80d').value);
+            const hra = parseInt(document.getElementById('hra').value);
+            
+            document.getElementById('valSal').innerText = fmt.format(sal);
+            document.getElementById('val80c').innerText = fmt.format(c80);
+            document.getElementById('val80d').innerText = fmt.format(d80);
+            document.getElementById('valHra').innerText = fmt.format(hra);
+
+            const stdDed = 50000;
+            
+            // Old Regime Calculation
+            const taxableOld = Math.max(0, sal - stdDed - c80 - d80 - hra);
+            let tOld = 0;
+            if (taxableOld > 1000000) tOld = 112500 + (taxableOld - 1000000) * 0.3;
+            else if (taxableOld > 500000) tOld = 12500 + (taxableOld - 500000) * 0.2;
+            else if (taxableOld > 250000) tOld = (taxableOld - 250000) * 0.05;
+            if (taxableOld <= 500000) tOld = 0; 
+
+            // New Regime Calculation (Simplified 24-25 Slaps)
+            const taxableNew = Math.max(0, sal - stdDed);
+            let tNew = 0;
+            if (taxableNew > 1500000) tNew = 150000 + (taxableNew - 1500000) * 0.3;
+            else if (taxableNew > 1200000) tNew = 90000 + (taxableNew - 1200000) * 0.2;
+            else if (taxableNew > 900000) tNew = 45000 + (taxableNew - 900000) * 0.15;
+            else if (taxableNew > 600000) tNew = 15000 + (taxableNew - 600000) * 0.1;
+            else if (taxableNew > 300000) tNew = (taxableNew - 300000) * 0.05;
+            if (taxableNew <= 700000) tNew = 0;
+
+            const finalOld = tOld * 1.04;
+            const finalNew = tNew * 1.04;
+
+            document.getElementById('taxOld').innerText = fmt.format(finalOld);
+            document.getElementById('taxNew').innerText = fmt.format(finalNew);
+
+            // Winner UI
+            document.getElementById('boxOld').classList.toggle('winner', finalOld < finalNew);
+            document.getElementById('boxNew').classList.toggle('winner', finalNew < finalOld);
+
+            // AI Logic
+            const gap80c = 150000 - c80;
+            const aiRec = document.getElementById('aiRecommendation');
+            if (gap80c > 0 && finalOld > 0) {
+                aiRec.innerHTML = `You have <b>${fmt.format(gap80c)}</b> left in your 80C limit. Investing this could save you approx <b>${fmt.format(gap80c * 0.2)}</b> in the Old Regime.`;
+            } else {
+                aiRec.innerText = "Deductions maximized. Switch regimes only if income exceeds ₹15L significantly.";
+            }
+
+            document.getElementById('monthlyTDS').innerText = fmt.format(Math.min(finalOld, finalNew) / 12);
+            document.getElementById('taxSlab').innerText = sal > 1500000 ? "30%" : (sal > 1000000 ? "20%" : "10%");
+
+            chart.data.datasets[0].data = [finalOld, finalNew];
+            chart.update();
+        }
+
+        window.onload = () => { initChart(); loadFromDB(); calcTax(); };
+    </script>
+</body>
+</html>

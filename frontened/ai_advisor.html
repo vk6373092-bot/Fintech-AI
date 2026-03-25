@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinWise AI Pro - Complete Business Advisor</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+    <style>
+        :root {
+            --bg-deep: #0a0a0f; --bg-panel: rgba(25, 25, 35, 0.7);
+            --border-glow: rgba(192, 163, 255, 0.2); --text-main: #ffffff; --text-muted: #94a3b8;
+            --theme-color: #c0a3ff; --theme-glow: rgba(192, 163, 255, 0.3);
+            --user-msg: #3b82f6; --ai-msg: rgba(255,255,255,0.05);
+            --success: #10b981; --warning: #f59e0b; --danger: #ef4444;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+        body { background: var(--bg-deep); color: var(--text-main); height: 100vh; display: flex; flex-direction: column; background-image: radial-gradient(circle at 50% 0%, var(--theme-glow), transparent 60%); }
+        
+        header { display: flex; justify-content: space-between; align-items: center; padding: 20px 40px; background: rgba(10, 10, 15, 0.8); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255,255,255,0.05); z-index: 100; position: sticky; top: 0; }
+        .header-btn { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 10px 16px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: 0.3s; font-weight: 500; }
+        .header-btn:hover { background: rgba(255,255,255,0.1); }
+        .header-btn.primary { background: var(--theme-color); color: #000; font-weight: 600; }
+
+        .chat-container { max-width: 1600px; margin: 20px auto; flex: 1; width: 100%; display: flex; flex-direction: column; background: var(--bg-panel); backdrop-filter: blur(16px); border: 1px solid var(--border-glow); border-radius: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); overflow: hidden; }
+        
+        .chat-box { flex: 1; padding: 30px; overflow-y: auto; display: flex; flex-direction: column; gap: 20px; }
+        .chat-box::-webkit-scrollbar { width: 6px; }
+        .chat-box::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+
+        .message { display: flex; gap: 15px; max-width: 85%; animation: fadeIn 0.3s ease; margin-bottom: 10px; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .message.user { align-self: flex-end; flex-direction: row-reverse; }
+        .avatar { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-weight: bold; }
+        .user .avatar { background: var(--user-msg); color: white; }
+        .ai .avatar { background: var(--theme-color); color: #000; }
+        
+        .bubble { padding: 20px 24px; border-radius: 20px; line-height: 1.6; font-size: 0.95rem; max-width: 100%; white-space: pre-wrap; }
+        .user .bubble { background: var(--user-msg); border-top-right-radius: 6px; }
+        .ai .bubble { background: var(--ai-msg); border: 1px solid rgba(255,255,255,0.05); border-top-left-radius: 6px; max-height: 400px; overflow-y: auto; }
+
+        .sidebar { position: fixed; right: 20px; top: 120px; background: var(--bg-panel); backdrop-filter: blur(16px); border: 1px solid var(--border-glow); border-radius: 16px; padding: 20px; width: 360px; max-height: 80vh; overflow-y: auto; z-index: 99; display: none; box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
+        .sidebar.active { display: block; animation: slideIn 0.3s ease; }
+        @keyframes slideIn { from { opacity: 0; transform: translateX(100%); } to { opacity: 1; transform: translateX(0); } }
+        .sidebar-toggle { position: fixed; right: 20px; top: 100px; background: var(--theme-color); color: #000; border: none; width: 50px; height: 50px; border-radius: 50%; cursor: pointer; box-shadow: 0 10px 30px var(--theme-glow); z-index: 100; transition: 0.3s; }
+        .sidebar-toggle:hover { transform: scale(1.1); }
+
+        .tool-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 15px; margin-bottom: 15px; cursor: pointer; transition: 0.3s; }
+        .tool-card:hover { background: rgba(255,255,255,0.08); transform: translateY(-2px); }
+        .tool-icon { font-size: 24px; margin-bottom: 8px; }
+        .tool-title { font-weight: 600; margin-bottom: 5px; }
+        .tool-desc { font-size: 0.85rem; color: var(--text-muted); }
+
+        .calculator { display: none; background: var(--bg-deep); border-radius: 16px; padding: 20px; margin-top: 15px; }
+        .calculator.active { display: block; }
+        .calc-input { width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white; font-size: 1rem; margin-bottom: 15px; }
+        .calc-input:focus { outline: none; border-color: var(--theme-color); box-shadow: 0 0 10px var(--theme-glow); }
+        .calc-result { background: var(--theme-color); color: #000; padding: 15px; border-radius: 12px; font-size: 1.3rem; font-weight: 700; text-align: center; }
+
+        .input-area { padding: 20px 30px; background: rgba(0,0,0,0.3); border-top: 1px solid rgba(255,255,255,0.05); }
+        .quick-prompts { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 15px; }
+        .chip { background: rgba(192, 163, 255, 0.1); border: 1px solid rgba(192, 163, 255, 0.3); color: var(--theme-color); padding: 10px 16px; border-radius: 25px; font-size: 0.85rem; cursor: pointer; transition: 0.3s; font-weight: 500; white-space: nowrap; }
+        .chip:hover { background: var(--theme-color); color: #000; transform: translateY(-2px); }
+
+        .input-wrapper { display: flex; gap: 15px; align-items: center; background: rgba(255,255,255,0.05); padding: 12px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); transition: 0.3s; }
+        .input-wrapper:focus-within { border-color: var(--theme-color); box-shadow: 0 0 20px var(--theme-glow); }
+        input[type="text"] { flex: 1; background: transparent; border: none; color: white; font-size: 1rem; outline: none; padding: 12px; }
+        .send-btn { background: var(--theme-color); color: #000; border: none; width: 48px; height: 48px; border-radius: 14px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.3s; font-weight: 600; }
+        .send-btn:hover { transform: scale(1.05); box-shadow: 0 0 20px var(--theme-glow); }
+        .send-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        .typing { display: none; gap: 5px; padding: 20px; align-items: center; }
+        .dot { width: 8px; height: 8px; background: var(--text-muted); border-radius: 50%; animation: bounce 1.4s infinite ease-in-out both; }
+        .dot:nth-child(1) { animation-delay: -0.32s; }
+        .dot:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes bounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
+
+        @media (max-width: 768px) { 
+            .sidebar { right: 10px; left: 10px; width: auto; top: 100px; }
+            .quick-prompts { gap: 6px; justify-content: center; }
+            .chip { padding: 8px 12px; font-size: 0.8rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <button class="sidebar-toggle" onclick="toggleSidebar()" title="Business Calculators">
+        <span class="material-symbols-outlined">calculator</span>
+    </button>
+    
+    <div class="sidebar" id="sidebar">
+        <h3 style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px; color: var(--theme-color);">
+            <span class="material-symbols-outlined">calculator</span> Pro Calculators
+        </h3>
+
+        <div class="tool-card" onclick="openCalculator('sip')">
+            <div class="tool-icon" style="color: var(--success);">trending_up</div>
+            <div class="tool-title">SIP Calculator</div>
+            <div class="tool-desc">Future value of investments</div>
+        </div>
+        <div class="calculator active" id="sip-calc">
+            <input type="number" class="calc-input" id="sip-amount" placeholder="Monthly Investment ₹">
+            <input type="number" class="calc-input" id="sip-rate" placeholder="Annual Return %">
+            <input type="number" class="calc-input" id="sip-years" placeholder="Years">
+            <button class="header-btn primary" style="width: 100%; justify-content: center;" onclick="calculateSIP()">Calculate Returns</button>
+            <div class="calc-result" id="sip-result" style="margin-top:15px;">₹0</div>
+        </div>
+
+        <div class="tool-card" onclick="openCalculator('emi')">
+            <div class="tool-icon" style="color: var(--warning);">account_balance_wallet</div>
+            <div class="tool-title">EMI Calculator</div>
+            <div class="tool-desc">Loan repayment schedule</div>
+        </div>
+        <div class="calculator" id="emi-calc">
+            <input type="number" class="calc-input" id="emi-principal" placeholder="Loan Amount ₹">
+            <input type="number" class="calc-input" id="emi-rate" placeholder="Interest Rate %">
+            <input type="number" class="calc-input" id="emi-tenure" placeholder="Tenure (months)">
+            <button class="header-btn primary" style="width: 100%; justify-content: center;" onclick="calculateEMI()">Calculate EMI</button>
+            <div class="calc-result" id="emi-result" style="margin-top:15px;">₹0/month</div>
+        </div>
+    </div>
+
+    <header>
+        <button class="header-btn" onclick="window.location.href='index.html'">
+            <span class="material-symbols-outlined">arrow_back</span> Dashboard
+        </button>
+        <h1 style="font-size: 1.6rem; font-weight: 700; display: flex; align-items: center; gap: 12px;">
+            <span class="material-symbols-outlined" style="color:var(--theme-color); font-size: 32px;">smart_toy</span> FinWise AI Enterprise
+        </h1>
+        <div style="font-size: 0.9rem; color: var(--success); display: flex; align-items: center; gap: 6px; font-weight: 600;">
+            <span class="material-symbols-outlined" style="font-size: 18px;">verified</span> Smart Assistant
+        </div>
+    </header>
+
+    <div class="chat-container">
+        <div class="chat-box" id="chatBox">
+            <div class="message ai">
+                <div class="avatar"><span class="material-symbols-outlined">smart_toy</span></div>
+                <div class="bubble">Hi there! 👋 I'm your Fintech AI Advisor. I can help you with anything from SIP strategies and tax optimization to analyzing market crashes. 
+
+Feel free to type your question below, or use one of the quick prompts to get started! Let's build some wealth together. 🚀</div>
+            </div>
+        </div>
+
+        <div class="typing message ai" id="typingIndicator">
+            <div class="avatar"><span class="material-symbols-outlined">smart_toy</span></div>
+            <div class="bubble" style="display: flex; gap: 5px; height: 45px; align-items: center;">
+                <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+            </div>
+        </div>
+
+        <div class="input-area">
+            <div class="quick-prompts">
+                <div class="chip" onclick="sendPrompt('how are you?')">1. How are you?</div>
+                <div class="chip" onclick="sendPrompt('today gold price')">2. Gold Price</div>
+                <div class="chip" onclick="sendPrompt('best stocks to buy')">3. Best Stocks</div>
+                <div class="chip" onclick="sendPrompt('sip calculator strategy')">4. SIP Strategy</div>
+                <div class="chip" onclick="sendPrompt('best football player net worth')">5. Football Star Wealth</div>
+                <div class="chip" onclick="sendPrompt('portfolio xray analysis')">6. Portfolio Xray</div>
+                <div class="chip" onclick="sendPrompt('80c tax optimization')">7. 80C Tax Save</div>
+                <div class="chip" onclick="sendPrompt('fire retirement number')">8. FIRE Number</div>
+                <div class="chip" onclick="sendPrompt('nifty 50 performance')">9. Nifty 50</div>
+                <div class="chip" onclick="sendPrompt('top mutual funds')">10. Best MFs</div>
+                <div class="chip" onclick="sendPrompt('crypto market update')">11. Crypto Live</div>
+                <div class="chip" onclick="sendPrompt('retirement corpus planning')">12. Retirement Plan</div>
+                <div class="chip" onclick="sendPrompt('rebalance portfolio strategy')">13. Rebalance</div>
+                <div class="chip" onclick="sendPrompt('dividend stock picks')">14. Dividend Stocks</div>
+                <div class="chip" onclick="sendPrompt('ipo analysis')">15. IPOs Today</div>
+                <div class="chip" onclick="sendPrompt('etf recommendations')">16. Best ETFs</div>
+                <div class="chip" onclick="sendPrompt('fixed deposit rates')">17. FD Rates</div>
+                <div class="chip" onclick="sendPrompt('ppf vs epf comparison')">18. PPF vs EPF</div>
+                <div class="chip" onclick="sendPrompt('corporate bond yields')">19. Corp Bonds</div>
+                <div class="chip" onclick="sendPrompt('reit performance')">20. REIT Returns</div>
+                <div class="chip" onclick="sendPrompt('international investing')">21. Global Stocks</div>
+                <div class="chip" onclick="sendPrompt('tax harvesting strategy')">22. Tax Harvest</div>
+                <div class="chip" onclick="sendPrompt('emergency fund size')">23. Emergency Fund</div>
+                <div class="chip" onclick="sendPrompt('insurance needs')">24. Insurance</div>
+                <div class="chip" onclick="sendPrompt('goal based investing')">25. Goal Investing</div>
+                <div class="chip" onclick="sendPrompt('market crash strategy')">26. Crash Strategy</div>
+                <div class="chip" onclick="sendPrompt('wealth creation roadmap')">27. Wealth Roadmap</div>
+            </div>
+            
+            <div class="input-wrapper">
+                <span class="material-symbols-outlined" style="color: var(--text-muted); margin-left: 12px;">psychology</span>
+                <input type="text" id="userInput" placeholder="Ask me anything..." onkeypress="handleEnter(event)">
+                <button class="send-btn" id="sendBtn" onclick="sendMessage()">
+                    <span class="material-symbols-outlined">send</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const chatBox = document.getElementById('chatBox');
+        const userInput = document.getElementById('userInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const typingIndicator = document.getElementById('typingIndicator');
+
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('active');
+        }
+
+        function openCalculator(type) {
+            document.querySelectorAll('.calculator').forEach(calc => calc.classList.remove('active'));
+            document.getElementById(`${type}-calc`).classList.add('active');
+            document.getElementById('sidebar').classList.add('active');
+        }
+
+        function calculateSIP() {
+            const monthly = parseFloat(document.getElementById('sip-amount').value) || 15000;
+            const rate = (parseFloat(document.getElementById('sip-rate').value) || 12) / 12 / 100;
+            const years = parseInt(document.getElementById('sip-years').value) || 15;
+            const months = years * 12;
+            const futureValue = monthly * (((Math.pow(1 + rate, months) - 1) / rate) * (1 + rate));
+            document.getElementById('sip-result').innerText = `₹${futureValue.toLocaleString('en-IN', {maximumFractionDigits: 0})}`;
+        }
+
+        function calculateEMI() {
+            const principal = parseFloat(document.getElementById('emi-principal').value) || 5000000;
+            const rate = (parseFloat(document.getElementById('emi-rate').value) || 8.5) / 12 / 100;
+            const tenure = parseInt(document.getElementById('emi-tenure').value) || 240;
+            const emi = principal * rate * Math.pow(1 + rate, tenure) / (Math.pow(1 + rate, tenure) - 1);
+            document.getElementById('emi-result').innerText = `₹${emi.toLocaleString('en-IN', {maximumFractionDigits: 0})}/month`;
+        }
+
+        // SMART REPLY LOGIC WITH MORE ACCURATE / CLEAR ANSWERS
+        function getSmartReply(text) {
+            const lowerText = text.toLowerCase().trim();
+            
+            if (lowerText.includes('how are you') || lowerText.includes('how r u')) {
+                return `I'm doing great and fully online, ready to help you with your money decisions today. 😊 
+
+Tell me your top financial goal right now—wealth creation, tax saving, or debt-free life—and we’ll plan it step by step.`;
+            }
+            else if (lowerText.includes('gold')) {
+                return `As of today, 24K gold in India is around ₹14,400–₹14,900 per gram (about ₹1.44–1.49 lakh per 10 grams), but exact price changes daily—please always verify with your city jeweller or a live gold site before buying. [web:3][web:9]
+
+For long‑term investing, Sovereign Gold Bonds (SGBs) are usually better than jewellery because you get gold price appreciation plus 2.5% annual interest and no capital gains tax if held till maturity.`;
+            }
+            else if (lowerText.includes('stock') && (lowerText.includes('best') || lowerText.includes('buy'))) {
+                return `There is no single “best” stock for everyone; it depends on your risk, time horizon, and existing portfolio.
+
+For most investors, a core allocation to broad index funds (like Nifty 50 or Nifty 500 index funds) plus a few high‑quality large caps is safer than betting on a few trendy names. Always check business quality, debt levels, and consistency of profits before buying.`;
+            }
+            else if (lowerText.includes('sip')) {
+                return `SIP is just a disciplined way of buying mutual fund units every month, and the power comes from long‑term compounding and rupee‑cost averaging.
+
+A strong strategy is: match equity allocation to your time horizon (7+ years = higher equity), review funds once a year, and use a small annual “step‑up SIP” (like 5–10% increase per year) so your investments grow along with your income.`;
+            }
+            else if (lowerText.includes('football')) {
+                return `Top players like Messi and Ronaldo usually build wealth from three major sources: club salaries, endorsements, and business or brand ventures (hotels, clothing lines, academies, etc.).
+
+The key lesson for us is to build multiple income streams, invest a portion consistently, and avoid lifestyle inflation when income rises.`;
+            }
+            else if (lowerText.includes('xray') || lowerText.includes('portfolio')) {
+                return `A balanced portfolio starts with deciding your equity–debt mix based on risk and age, for example many moderate investors use something like 60–70% equity and 30–40% debt for long‑term goals.
+
+You should also check diversification across market caps, sectors, and products, avoid too many overlapping funds, and rebalance once a year if the allocation drifts too much from your target.`;
+            }
+            else if (lowerText.includes('80c') || lowerText.includes('tax optimization')) {
+                return `Under Section 80C, you can claim up to ₹1.5 lakh in a year via options like ELSS mutual funds, EPF, PPF, life insurance premiums, principal on home loan, and children’s tuition fees.
+
+ELSS funds give equity growth with a 3‑year lock‑in, EPF currently offers about 8.25% interest, and PPF offers around 7.1% tax‑free interest—choosing between them depends on how much risk and lock‑in you are comfortable with. [web:5][web:10]`;
+            }
+            else if (lowerText.includes('fire')) {
+                return `FIRE (Financial Independence, Retire Early) generally uses the “25x rule”: target corpus ≈ 25 times your annual expenses, assuming a safe withdrawal rate of around 4% per year.
+
+To move towards FIRE, you need a high savings rate (often 40–60% of income), long‑term equity investing, and very clear tracking of monthly expenses so your FIRE number is realistic.`;
+            }
+            else if (lowerText.includes('nifty')) {
+                return `Nifty 50 represents 50 large Indian companies and historically has delivered roughly low‑teens annualised returns over long periods, though returns in any single 3–5‑year window can be very volatile.
+
+A low‑cost Nifty 50 index fund via SIP is often a simple way for many investors to participate in India’s growth without stock picking, provided the investment horizon is at least 7–10 years.`;
+            }
+            else if (lowerText.includes('mutual fund') || lowerText.includes('mfs')) {
+                return `You don’t need many mutual funds; 2–4 well‑chosen funds are usually enough for most retail investors.
+
+A typical simple structure could be: one broad index fund (like Nifty 50 or Nifty 500), one flexi‑cap or large‑and‑mid fund, and optionally a small‑cap fund only if your horizon is 10+ years and you accept higher volatility.`;
+            }
+            else if (lowerText.includes('crypto') || lowerText.includes('bitcoin')) {
+                return `Crypto is highly volatile and speculative, and in India gains are usually taxed at a flat 30% plus applicable surcharge and cess, with no set‑off of losses allowed as per current rules.
+
+Treat it like high‑risk venture capital: keep exposure small (for example under 2–5% of your net worth), avoid leveraged trading, and never use money needed for essential goals.`;
+            }
+            else if (lowerText.includes('retirement plan')) {
+                return `Good retirement planning starts with estimating your post‑retirement monthly expenses, adjusting them for inflation, and then calculating how large a corpus you need so you can withdraw safely for 25–30 years.
+
+Many people use a “bucket” approach: a near‑term bucket in safe instruments for the next few years of expenses, a medium‑term bucket in debt, and a long‑term bucket in equities to beat inflation.`;
+            }
+            else if (lowerText.includes('rebalance')) {
+                return `Rebalancing means bringing your portfolio back to your target asset allocation when market movements change it—for example, if your goal is 70% equity and 30% debt but equity grows to 80%, you book some equity profits and add to debt.
+
+Doing this once a year or when allocation drifts beyond a set band (say ±5%) helps control risk and automatically forces you to “sell high, buy relatively low”.`;
+            }
+            else if (lowerText.includes('dividend')) {
+                return `Dividend stocks can provide regular cash flow, but you should focus first on overall business quality, earnings stability, and payout consistency rather than just chasing very high dividend yields.
+
+A very high yield can be a warning sign if it is caused by a big fall in price due to weak fundamentals, so always check profits, debt, and cash flows before calling something a “safe dividend play”.`;
+            }
+            else if (lowerText.includes('ipo')) {
+                return `IPOs are often priced to maximise proceeds for the company and existing shareholders, so listing gains are not guaranteed and many issues trade below offer price after the excitement fades.
+
+If you do not deeply understand the business, it is usually safer to track the company for a few quarters after listing and then decide instead of applying just because of hype or oversubscription numbers.`;
+            }
+            else if (lowerText.includes('etf')) {
+                return `ETFs are funds that trade on the exchange like shares while tracking an index or asset class, and they usually have lower expense ratios than many active funds.
+
+They are useful for low‑cost diversification (like Nifty, Bank Nifty, gold ETFs), but you must also watch liquidity and bid–ask spreads, especially in less‑traded ETFs.`;
+            }
+            else if (lowerText.includes('fd') || lowerText.includes('fixed deposit')) {
+                return `Bank FDs are low‑risk and good for short‑term goals, but after tax they may not always beat inflation, especially for people in higher tax brackets.
+
+You can improve flexibility by using an FD ladder (multiple FDs with different maturities) or sweep‑in facilities so you keep some liquidity while still earning FD‑level interest on surplus cash.`;
+            }
+            else if (lowerText.includes('ppf') || lowerText.includes('epf')) {
+                return `EPF is mainly for salaried employees and currently offers around 8.25% interest, which is tax‑efficient and very useful for retirement, while PPF is a 15‑year small‑savings scheme with about 7.1% tax‑free interest and can be opened even by self‑employed people. [web:5][web:10]
+
+Both are very good for the safe debt part of your long‑term portfolio; choosing between them depends on your employment type, liquidity needs, and how much you already contribute through EPF.`;
+            }
+            else if (lowerText.includes('bond')) {
+                return `Corporate bonds can offer higher returns than FDs but come with credit risk, so rating quality (AAA, AA+) and issuer strength are critical.
+
+Also remember that interest from most bonds is taxed as per your income slab, so always compare post‑tax returns with alternatives like high‑quality debt funds, FDs, or small‑savings schemes.`;
+            }
+            else if (lowerText.includes('reit')) {
+                return `REITs let you invest small amounts into a pool of commercial real‑estate assets like offices or malls and receive a share of rental income plus potential capital appreciation.
+
+They trade on exchanges like shares, and distributions are partly taxable, so you should check yield after tax, occupancy levels, lease tenures, and the quality of underlying properties before investing.`;
+            }
+            else if (lowerText.includes('international') || lowerText.includes('global')) {
+                return `Adding some international equity (for example US or global funds) can reduce country‑specific risk and give you exposure to sectors or companies that are under‑represented in India.
+
+However, you should be aware of currency risk, taxation rules on foreign funds, and any LRS limits if investing directly abroad, then keep overseas allocation within a disciplined percentage of your total portfolio.`;
+            }
+            else if (lowerText.includes('harvest')) {
+                return `Tax‑loss harvesting means selling investments at a loss to offset capital gains, so your overall tax outgo reduces, while tax‑gain harvesting can be used to utilise tax‑free limits on long‑term gains.
+
+You must respect rules about set‑off and carry‑forward of losses, and when you buy back the same or similar asset you should consider timing, costs, and whether the transaction changes your actual investment risk.`;
+            }
+            else if (lowerText.includes('emergency')) {
+                return `A practical emergency fund is usually 3–6 months of essential expenses (or more if your income is unstable), kept in very safe and liquid products like savings accounts, sweep‑in FDs, or low‑risk liquid funds.
+
+This buffer prevents you from selling long‑term investments at a bad time if you face job loss, medical issues, or other short‑notice expenses.`;
+            }
+            else if (lowerText.includes('insurance')) {
+                return `For most people, a pure term life insurance plan plus a good health insurance policy are the most important covers; combining investment and insurance in one product usually makes both more expensive and less efficient.
+
+A common thumb rule is term cover of about 15–20 times your annual income, adequate health cover (base plan plus super top‑up), and then optionally personal accident or critical illness cover depending on your situation.`;
+            }
+            else if (lowerText.includes('goal')) {
+                return `Goal‑based investing starts by defining each goal clearly—amount needed, in today’s rupees, and years left—then picking products that match that time horizon and risk.
+
+Short‑term goals (under 3 years) usually suit safer debt or FDs, medium‑term goals can use a mix of equity and debt, and long‑term goals (7+ years) can have a higher equity allocation for better growth.`;
+            }
+            else if (lowerText.includes('crash')) {
+                return `Market crashes are normal but emotionally tough; having an emergency fund, no high‑interest debt, and a pre‑decided asset allocation makes it easier to avoid panic selling.
+
+If your goals are far away and your asset mix is appropriate, continuing SIPs and possibly rebalancing can actually benefit you because you buy more units at lower prices.`;
+            }
+            else if (lowerText.includes('roadmap') || lowerText.includes('wealth')) {
+                return `A simple wealth‑building roadmap is: first secure yourself with adequate insurance, then build an emergency fund, then clear high‑interest debt, and only after that start systematic long‑term investing.
+
+Consistently living below your means, increasing investments whenever income rises, and sticking to a diversified plan for 10–15 years usually matters more than finding the “perfect” product.`;
+            }
+            else {
+                return `Nice question. I’m focused on core personal finance topics like investing, insurance, tax planning, retirement, and risk management.
+
+Pick any chip from above or type a specific question like “SIP for 15 years for 3 crore goal” or “Which is better for me, PPF or ELSS?” and I’ll break it down in detail.`;
+            }
+        }
+
+        function appendMessage(text, sender) {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `message ${sender}`;
+            const avatarHTML = sender === 'user'
+                ? '<div class="avatar">U</div>'
+                : '<div class="avatar"><span class="material-symbols-outlined">smart_toy</span></div>';
+            msgDiv.innerHTML = `${avatarHTML}<div class="bubble">${text}</div>`;
+            chatBox.appendChild(msgDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function sendPrompt(text) {
+            userInput.value = text;
+            sendMessage();
+        }
+
+        function handleEnter(e) {
+            if (e.key === 'Enter') sendMessage();
+        }
+
+        function sendMessage() {
+            const text = userInput.value.trim();
+            if (!text) return;
+            
+            appendMessage(text, 'user');
+            userInput.value = '';
+            
+            typingIndicator.style.display = 'flex';
+            chatBox.scrollTop = chatBox.scrollHeight;
+            userInput.disabled = true;
+            sendBtn.disabled = true;
+            
+            setTimeout(() => {
+                typingIndicator.style.display = 'none';
+                const reply = getSmartReply(text);
+                appendMessage(reply, 'ai');
+                
+                userInput.disabled = false;
+                sendBtn.disabled = false;
+                userInput.focus();
+            }, 1200);
+        }
+
+        window.addEventListener('resize', () => {
+            if (window.innerWidth < 768) document.getElementById('sidebar').classList.remove('active');
+        });
+    </script>
+</body>
+</html>

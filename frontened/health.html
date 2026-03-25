@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Financial Health Diagnostics Pro | FinWise</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+
+    <style>
+        :root {
+            --bg-deep: #0a0a0f;
+            --bg-panel: rgba(25, 25, 35, 0.7);
+            --border-glow: rgba(74, 222, 128, 0.2);
+            --text-main: #ffffff;
+            --text-muted: #94a3b8;
+            --theme-color: #4ade80;
+            --theme-glow: rgba(74, 222, 128, 0.4);
+            --success: #10b981;
+            --warning: #facc15;
+            --danger: #ef4444;
+            --accent-purple: #c0a3ff;
+            --gradient-primary: linear-gradient(135deg, #4ade80, #10b981);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background: var(--bg-deep); 
+            color: var(--text-main); 
+            min-height: 100vh; 
+            background-image: radial-gradient(circle at 50% 0%, var(--theme-glow), transparent 60%);
+            transition: all 0.5s ease;
+        }
+
+        header { 
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 20px 40px; background: rgba(10, 10, 15, 0.9); backdrop-filter: blur(20px); 
+            border-bottom: 1px solid rgba(255,255,255,0.08); position: sticky; top: 0; z-index: 100;
+        }
+        .header-btn { 
+            background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: white; 
+            padding: 12px 20px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; gap: 8px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); font-weight: 500; position: relative; overflow: hidden;
+            text-decoration: none;
+        }
+        .header-btn:hover { background: rgba(255,255,255,0.15); transform: translateY(-1px); }
+        .header-btn.primary { 
+            background: var(--gradient-primary); color: white; font-weight: 700; box-shadow: 0 8px 25px rgba(16,185,129,0.3); 
+            border: none;
+        }
+        .header-btn.save-btn { border-color: var(--theme-color); color: var(--theme-color); }
+        .header-btn.primary:hover { transform: translateY(-2px); box-shadow: 0 15px 35px rgba(16,185,129,0.4); }
+        .header-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+        .dashboard-container { max-width: 1800px; margin: 0 auto; padding: 40px; display: grid; grid-template-columns: 380px 1fr 420px; gap: 35px; }
+        .glass-panel { 
+            background: var(--bg-panel); backdrop-filter: blur(25px); border: 1px solid var(--border-glow); 
+            border-radius: 24px; padding: 35px; box-shadow: 0 20px 60px rgba(0,0,0,0.4); 
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .glass-panel:hover { transform: translateY(-5px); box-shadow: 0 30px 80px rgba(0,0,0,0.5); }
+
+        h2, h3, h4 { font-weight: 700; margin-bottom: 25px; display: flex; align-items: center; gap: 12px; }
+        .highlight-text { color: var(--theme-color); transition: color 0.5s ease; }
+
+        .input-group { margin-bottom: 30px; }
+        .input-header { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 1rem; color: var(--text-muted); }
+        .val-display { color: white; font-weight: 800; font-size: 1.15rem; }
+        input[type=range] { 
+            -webkit-appearance: none; width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; 
+        }
+        input[type=range]::-webkit-slider-thumb { 
+            -webkit-appearance: none; height: 24px; width: 24px; border-radius: 50%; background: white; 
+            cursor: pointer; margin-top: -9px; border: 4px solid var(--theme-color); 
+            box-shadow: 0 0 20px var(--theme-glow); transition: all 0.3s ease;
+        }
+
+        .score-container { text-align: center; margin: 20px 0; position: relative; }
+        .score-circle { 
+            width: 220px; height: 220px; border-radius: 50%; border: 12px solid transparent; 
+            background: conic-gradient(var(--theme-color) 0deg calc(var(--health-score, 0) * 3.6deg), rgba(255,255,255,0.08) 0deg);
+            margin: 0 auto 20px; display: flex; flex-direction: column; justify-content: center; align-items: center;
+            box-shadow: 0 0 50px var(--theme-glow); transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .score-value { font-size: 5rem; font-weight: 900; color: white; line-height: 1; }
+        .score-label { font-size: 1rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 3px; margin-top: 8px; font-weight: 600; }
+
+        .radar-wrapper { flex: 1; min-height: 300px; border-radius: 16px; overflow: hidden; background: rgba(0,0,0,0.2); }
+
+        .metric-card { 
+            background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.08); padding: 25px; 
+            border-radius: 20px; margin-bottom: 25px; transition: all 0.3s ease; cursor: pointer;
+        }
+        .metric-card:hover { background: rgba(0,0,0,0.7); transform: translateX(8px); }
+        .metric-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .metric-icon { font-size: 28px; width: 40px; text-align: center; }
+        .metric-val { font-weight: 800; font-size: 1.3rem; }
+        .metric-bar { height: 10px; background: rgba(255,255,255,0.15); border-radius: 5px; overflow: hidden; margin-top: 8px; }
+        .metric-fill { height: 100%; border-radius: 5px; transition: all 0.8s ease; position: relative; overflow: hidden; }
+
+        /* History Styles */
+        .history-list {
+            margin-top: 20px;
+            max-height: 250px;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+        .history-item {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.05);
+            padding: 12px 15px;
+            border-radius: 12px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .history-date { font-size: 0.8rem; color: var(--text-muted); }
+        .history-score { font-weight: 700; color: var(--theme-color); }
+        .clear-history-btn {
+            background: transparent;
+            border: 1px solid var(--danger);
+            color: var(--danger);
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .clear-history-btn:hover {
+            background: var(--danger);
+            color: white;
+        }
+
+        .ai-box { 
+            background: linear-gradient(145deg, rgba(192,163,255,0.15), rgba(192,163,255,0.05)); 
+            border: 1px solid rgba(192,163,255,0.25); padding: 25px; border-radius: 20px; margin-top: 20px; 
+            position: relative; overflow: hidden;
+        }
+
+        /* Modal Styles */
+        .modal { 
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(0,0,0,0.85); z-index: 1000; backdrop-filter: blur(10px); 
+        }
+        .modal-content { 
+            background: var(--bg-panel); margin: 8% auto; padding: 40px; border-radius: 24px; 
+            max-width: 600px; max-height: 80vh; overflow-y: auto; border: 1px solid var(--border-glow); 
+            box-shadow: 0 50px 100px rgba(0,0,0,0.6); position: relative;
+        }
+        .modal-close { 
+            position: absolute; top: 20px; right: 25px; background: none; border: none; 
+            color: var(--text-muted); font-size: 28px; cursor: pointer; width: 40px; height: 40px; 
+            display: flex; align-items: center; justify-content: center; border-radius: 50%; 
+        }
+
+        .goal-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; margin: 25px 0; }
+        .goal-btn { 
+            padding: 20px 15px; border-radius: 16px; border: 2px solid rgba(255,255,255,0.1); 
+            background: rgba(0,0,0,0.4); cursor: pointer; transition: all 0.3s; 
+            text-align: center; font-size: 1rem; font-weight: 600; display: flex; flex-direction: column; align-items: center; gap: 8px;
+        }
+        .goal-btn.active { 
+            background: var(--gradient-primary); color: white; border-color: transparent; 
+            box-shadow: 0 15px 40px rgba(16,185,129,0.4); transform: scale(1.05); 
+        }
+
+        @media (max-width: 1600px) { .dashboard-container { grid-template-columns: 1fr 1fr; } }
+        @media (max-width: 1100px) { .dashboard-container { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div style="display: flex; align-items: center; gap: 20px;">
+            <button class="header-btn" onclick="window.location.href='index.html'">
+                <span class="material-symbols-outlined">arrow_back</span> Dashboard
+            </button>
+            <h1 style="font-size: 1.6rem; font-weight: 800;">
+                <span class="material-symbols-outlined highlight-text" style="font-size: 2rem;">monitor_heart</span>
+                Financial Diagnostics Pro
+            </h1>
+        </div>
+        <div style="display: flex; gap: 12px;">
+            <button class="header-btn save-btn" id="saveBtn" onclick="saveHealthData()">
+                <span class="material-symbols-outlined">cloud_upload</span> Save to Cloud
+            </button>
+            <button class="header-btn" id="goalsBtn" onclick="openGoalsModal()">
+                <span class="material-symbols-outlined">edit_note</span> Goals
+            </button>
+            <button class="header-btn primary" id="reportBtn" onclick="generateReport()">
+                <span class="material-symbols-outlined">download</span> Premium Report
+            </button>
+        </div>
+    </header>
+
+    <div class="dashboard-container">
+        
+        <div class="glass-panel">
+            <h3><span class="material-symbols-outlined highlight-text">vital_signs</span> Live Vitals</h3>
+            
+            <div class="input-group">
+                <div class="input-header"><span>Monthly Take-Home</span> <span class="val-display" id="valInc">₹80,000</span></div>
+                <input type="range" id="income" min="20000" max="800000" step="5000" value="80000" oninput="analyzeHealth()">
+            </div>
+
+            <div class="input-group">
+                <div class="input-header"><span>Essential Expenses</span> <span class="val-display" id="valExp">₹40,000</span></div>
+                <input type="range" id="expense" min="10000" max="500000" step="5000" value="40000" oninput="analyzeHealth()">
+            </div>
+
+            <div class="input-group">
+                <div class="input-header"><span>Debt EMIs</span> <span class="val-display" id="valDebt">₹15,000</span></div>
+                <input type="range" id="debt" min="0" max="300000" step="1000" value="15000" oninput="analyzeHealth()">
+            </div>
+
+            <div class="input-group">
+                <div class="input-header"><span>Liquid Emergency Fund</span> <span class="val-display" id="valSav">₹1,50,000</span></div>
+                <input type="range" id="savings" min="0" max="10000000" step="50000" value="150000" oninput="analyzeHealth()">
+            </div>
+
+            <div class="input-group">
+                <div class="input-header"><span>Investment Value</span> <span class="val-display" id="valInvest">₹5,00,000</span></div>
+                <input type="range" id="investments" min="0" max="50000000" step="100000" value="500000" oninput="analyzeHealth()">
+            </div>
+
+            <div style="margin-top: 30px; padding: 20px; background: rgba(0,0,0,0.3); border-radius: 16px; border: 1px solid rgba(255,255,255,0.1);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <span style="color: var(--text-muted);">Monthly Surplus:</span>
+                    <span id="cashflowText" style="font-weight: 800; font-size: 1.4rem; color: var(--success);">₹25,000</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.9rem; color: var(--text-muted);">
+                    <span>Net Worth: <span id="netWorth" style="color: white; font-weight: 700;">₹6,50,000</span></span>
+                    <span>Health Score: <span id="quickScore" style="color: var(--theme-color);">78%</span></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="glass-panel">
+            <div class="score-container">
+                <div class="score-circle" id="scoreCircle" style="--health-score: 78;">
+                    <div class="score-value" id="mainScore">78</div>
+                    <div class="score-label" id="scoreLabel">Financial Health</div>
+                </div>
+                <div style="margin-top: 25px; font-weight: 700; font-size: 1.4rem; color: var(--theme-color);" id="statusText">Healthy Status</div>
+            </div>
+            
+            <div class="radar-wrapper">
+                <canvas id="radarChart"></canvas>
+            </div>
+
+            <div style="margin-top: 25px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h4 style="font-size: 1rem; margin-bottom: 0;"><span class="material-symbols-outlined">history</span> Diagnostics History</h4>
+                    <button class="clear-history-btn" onclick="clearHealthHistory()">
+                        <span class="material-symbols-outlined" style="font-size: 14px;">delete</span> Clear All
+                    </button>
+                </div>
+                <div class="history-list" id="historyList">
+                    <div style="color: var(--text-muted); text-align: center; padding: 20px;">No history records found.</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="glass-panel">
+            <h3><span class="material-symbols-outlined" style="color: var(--accent-purple);">psychology</span> Precision Diagnostics</h3>
+            
+            <div class="metric-card">
+                <div class="metric-header">
+                    <span class="material-symbols-outlined metric-icon" style="color: var(--accent-purple);">shield</span>
+                    <span>Emergency Fund Coverage</span>
+                    <span class="metric-val" id="txtEmg">3.8 Months</span>
+                </div>
+                <div class="metric-bar"><div class="metric-fill" id="barEmg"></div></div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-header">
+                    <span class="material-symbols-outlined metric-icon" style="color: var(--danger);">credit_card</span>
+                    <span>Debt-to-Income Ratio</span>
+                    <span class="metric-val" id="txtDti">18.8%</span>
+                </div>
+                <div class="metric-bar"><div class="metric-fill" id="barDti"></div></div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-header">
+                    <span class="material-symbols-outlined metric-icon" style="color: var(--success);">savings</span>
+                    <span>Savings Rate</span>
+                    <span class="metric-val" id="txtSav">31.3%</span>
+                </div>
+                <div class="metric-bar"><div class="metric-fill" id="barSav"></div></div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-header">
+                    <span class="material-symbols-outlined metric-icon" style="color: var(--warning);">trending_up</span>
+                    <span>Investment Health</span>
+                    <span class="metric-val" id="txtInvest">12.5%</span>
+                </div>
+                <div class="metric-bar"><div class="metric-fill" id="barInvest"></div></div>
+            </div>
+
+            <div class="ai-box">
+                <strong style="color: var(--accent-purple);">🧠 AI Financial Physician:</strong>
+                <div id="aiText" style="margin-top: 12px;">Analyzing your complete financial genome...</div>
+                <div style="margin-top: 15px; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 12px; font-size: 0.9rem;">
+                    <strong>Priority #1:</strong> <span id="topPriority">Build Emergency Fund</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="goalsModal" class="modal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeGoalsModal()">&times;</button>
+            <h3 style="margin-bottom: 10px;"><span class="material-symbols-outlined">edit_note</span> Set Financial Goals</h3>
+            <div class="goal-grid" id="goalsGrid"></div>
+            <div style="margin-top: 30px; display: flex; gap: 15px;">
+                <button onclick="saveGoals()" style="flex: 1; padding: 18px; background: var(--gradient-primary); border: none; border-radius: 16px; color: white; font-weight: 700; cursor: pointer;">💾 Save My Goals</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const currencyFmt = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 });
+        let radarChart;
+        let activeGoals = ['travel'];
+        let scoreHistory = [];
+        const token = localStorage.getItem('finwise_token');
+
+        const goalsData = {
+            house: { name: '🏠 House', emoji: '🏠', impact: 25 },
+            kids: { name: '👨‍👩‍👧 Kids Education', emoji: '👨‍👩‍👧', impact: 35 },
+            retire: { name: '🛫 Early Retirement', emoji: '🛫', impact: 50 },
+            travel: { name: '✈️ World Travel', emoji: '✈️', impact: 15 },
+            car: { name: '🚗 New Car', emoji: '🚗', impact: 10 },
+            wedding: { name: '💒 Wedding', emoji: '💒', impact: 20 }
+        };
+
+        function initChart() {
+            const ctx = document.getElementById('radarChart').getContext('2d');
+            Chart.defaults.color = '#94a3b8';
+            Chart.defaults.font.family = 'Inter';
+            
+            radarChart = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: ['Emergency Fund', 'Debt Control', 'Savings Rate', 'Investments', 'Cashflow', 'Goal Alignment'],
+                    datasets: [{
+                        label: 'Health Metrics',
+                        data: [0, 0, 0, 0, 0, 0],
+                        backgroundColor: 'rgba(74, 222, 128, 0.15)',
+                        borderColor: '#4ade80',
+                        pointBackgroundColor: '#4ade80',
+                        borderWidth: 3,
+                        pointRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        r: {
+                            angleLines: { color: 'rgba(255,255,255,0.1)' },
+                            grid: { color: 'rgba(255,255,255,0.12)' },
+                            pointLabels: { color: '#e2e8f0', font: { size: 12, weight: '600' } },
+                            ticks: { display: false, min: 0, max: 100 }
+                        }
+                    }
+                }
+            });
+        }
+
+        // ========================================================
+        // SAVE & PERSISTENCE LOGIC
+        // ========================================================
+
+        async function saveHealthData() {
+            if (!token) return alert("Please log in to save data.");
+
+            const currentScore = document.getElementById('mainScore').innerText;
+            const entry = {
+                date: new Date().toLocaleDateString('en-IN'),
+                score: currentScore,
+                status: document.getElementById('statusText').innerText
+            };
+
+            // Add to history
+            scoreHistory.unshift(entry);
+            if (scoreHistory.length > 5) scoreHistory.pop();
+
+            const payload = {
+                type: 'healthData',
+                data: {
+                    income: document.getElementById('income').value,
+                    expense: document.getElementById('expense').value,
+                    debt: document.getElementById('debt').value,
+                    savings: document.getElementById('savings').value,
+                    investments: document.getElementById('investments').value,
+                    goals: activeGoals,
+                    history: scoreHistory
+                }
+            };
+
+            const saveBtn = document.getElementById('saveBtn');
+            saveBtn.innerHTML = '<span class="material-symbols-outlined">sync</span> Saving...';
+            saveBtn.disabled = true;
+
+            try {
+                const res = await fetch('http://localhost:5000/api/snapshot', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify(payload)
+                });
+
+                if (res.ok) {
+                    renderHistory();
+                    alert("✅ Financial vitals synced to cloud!");
+                }
+            } catch (err) {
+                console.error(err);
+            } finally {
+                saveBtn.innerHTML = '<span class="material-symbols-outlined">cloud_upload</span> Save to Cloud';
+                saveBtn.disabled = false;
+            }
+        }
+
+        async function loadHealthData() {
+            if (!token) return;
+            try {
+                const res = await fetch('http://localhost:5000/api/snapshot', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const snapshot = await res.json();
+                if (snapshot.healthData) {
+                    const d = snapshot.healthData;
+                    document.getElementById('income').value = d.income || 80000;
+                    document.getElementById('expense').value = d.expense || 40000;
+                    document.getElementById('debt').value = d.debt || 15000;
+                    document.getElementById('savings').value = d.savings || 150000;
+                    document.getElementById('investments').value = d.investments || 500000;
+                    activeGoals = d.goals || ['travel'];
+                    scoreHistory = d.history || [];
+                    
+                    analyzeHealth();
+                    renderHistory();
+                }
+            } catch (e) { console.log("Load failed", e); }
+        }
+
+        function renderHistory() {
+            const list = document.getElementById('historyList');
+            if (scoreHistory.length === 0) {
+                list.innerHTML = '<div style="color: var(--text-muted); text-align: center; padding: 20px;">No history records found.</div>';
+                return;
+            }
+            list.innerHTML = scoreHistory.map(h => `
+                <div class="history-item">
+                    <span class="history-date">${h.date}</span>
+                    <span class="history-status" style="font-size: 0.8rem; opacity:0.8">${h.status}</span>
+                    <span class="history-score">${h.score}%</span>
+                </div>
+            `).join('');
+        }
+
+        async function clearHealthHistory() {
+            if (!confirm("Are you sure you want to delete all diagnostic history records?")) return;
+            
+            scoreHistory = [];
+            
+            // Sync empty history to DB
+            const payload = {
+                type: 'healthData',
+                data: {
+                    income: document.getElementById('income').value,
+                    expense: document.getElementById('expense').value,
+                    debt: document.getElementById('debt').value,
+                    savings: document.getElementById('savings').value,
+                    investments: document.getElementById('investments').value,
+                    goals: activeGoals,
+                    history: []
+                }
+            };
+
+            try {
+                await fetch('http://localhost:5000/api/snapshot', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify(payload)
+                });
+                renderHistory();
+            } catch (e) { console.error("Wipe failed", e); }
+        }
+
+        // ========================================================
+        // CORE CALCULATION LOGIC
+        // ========================================================
+
+        function analyzeHealth() {
+            const inc = parseInt(document.getElementById('income').value || 0);
+            const exp = parseInt(document.getElementById('expense').value || 0);
+            const debt = parseInt(document.getElementById('debt').value || 0);
+            const sav = parseInt(document.getElementById('savings').value || 0);
+            const invest = parseInt(document.getElementById('investments').value || 0);
+
+            document.getElementById('valInc').innerText = currencyFmt.format(inc);
+            document.getElementById('valExp').innerText = currencyFmt.format(exp);
+            document.getElementById('valDebt').innerText = currencyFmt.format(debt);
+            document.getElementById('valSav').innerText = currencyFmt.format(sav);
+            document.getElementById('valInvest').innerText = currencyFmt.format(invest);
+
+            const cashflow = inc - exp - debt;
+            const netWorth = sav + invest - debt;
+            
+            document.getElementById('cashflowText').innerText = currencyFmt.format(cashflow);
+            document.getElementById('cashflowText').style.color = cashflow >= 0 ? 'var(--success)' : 'var(--danger)';
+            document.getElementById('netWorth').innerText = currencyFmt.format(netWorth);
+            document.getElementById('quickScore').innerText = Math.round((sav + invest) / Math.max(inc * 6, 1) * 100) + '%';
+
+            const emgScore = Math.min((sav / Math.max(exp * 6, 1)) * 100, 100);
+            const dtiScore = Math.max(0, 100 - (debt / Math.max(inc, 1) * 100 / 0.4));
+            const savRateScore = cashflow > 0 ? Math.min((cashflow / Math.max(inc, 1) * 100 / 0.25) * 100, 100) : 0;
+            const investScore = Math.min((invest / Math.max(inc * 12 * 2, 1)) * 100, 100);
+            const cfScore = cashflow > 0 ? Math.min((cashflow / Math.max(inc * 0.3, 1)) * 100, 100) : 0;
+            const goalScore = activeGoals.reduce((sum, goal) => sum + (goalsData[goal]?.impact || 0), 0) / 1.5;
+
+            const overallScore = Math.round(emgScore * 0.25 + dtiScore * 0.25 + savRateScore * 0.2 + investScore * 0.15 + cfScore * 0.1 + goalScore * 0.05);
+
+            let themeColor, themeGlow, statusText;
+            if (overallScore >= 85) { themeColor = '#10b981'; themeGlow = 'rgba(16,185,129,0.5)'; statusText = '🏆 Elite Status'; }
+            else if (overallScore >= 70) { themeColor = '#4ade80'; themeGlow = 'rgba(74,222,128,0.4)'; statusText = '✅ Healthy'; }
+            else if (overallScore >= 50) { themeColor = '#facc15'; themeGlow = 'rgba(250,204,21,0.4)'; statusText = '⚠️ Caution'; }
+            else { themeColor = '#ef4444'; themeGlow = 'rgba(239,68,68,0.4)'; statusText = '🚨 Critical'; }
+
+            document.documentElement.style.setProperty('--theme-color', themeColor);
+            document.documentElement.style.setProperty('--theme-glow', themeGlow);
+            document.getElementById('scoreCircle').style.setProperty('--health-score', overallScore);
+            document.getElementById('mainScore').innerText = overallScore;
+            document.getElementById('statusText').innerText = statusText;
+
+            document.getElementById('barEmg').style.width = emgScore + '%';
+            document.getElementById('barEmg').style.background = themeColor;
+            document.getElementById('txtEmg').innerText = (sav/Math.max(exp,1)).toFixed(1) + ' Months';
+
+            document.getElementById('barDti').style.width = dtiScore + '%';
+            document.getElementById('txtDti').innerText = ((debt/Math.max(inc,1))*100).toFixed(1) + '%';
+
+            document.getElementById('barSav').style.width = savRateScore + '%';
+            document.getElementById('txtSav').innerText = ((cashflow/Math.max(inc,1))*100).toFixed(1) + '%';
+
+            document.getElementById('barInvest').style.width = investScore + '%';
+            document.getElementById('txtInvest').innerText = ((invest/(Math.max(inc,1)*12))*100).toFixed(1) + '%';
+
+            radarChart.data.datasets[0].data = [emgScore, dtiScore, savRateScore, investScore, cfScore, goalScore];
+            radarChart.data.datasets[0].borderColor = themeColor;
+            radarChart.update();
+
+            document.getElementById('aiText').innerText = overallScore > 75 ? "Excellent foundation. Focus on wealth compounding." : "Prioritize building 6 months of emergency cover.";
+        }
+
+        function openGoalsModal() {
+            document.getElementById('goalsModal').style.display = 'block';
+            populateGoalsGrid();
+        }
+        function closeGoalsModal() { document.getElementById('goalsModal').style.display = 'none'; }
+        
+        function populateGoalsGrid() {
+            const grid = document.getElementById('goalsGrid');
+            grid.innerHTML = Object.entries(goalsData).map(([k, g]) => `
+                <div class="goal-btn ${activeGoals.includes(k) ? 'active' : ''}" onclick="toggleGoal('${k}')">
+                    <div style="font-size: 1.8rem;">${g.emoji}</div>
+                    <div style="font-size: 0.85rem;">${g.name}</div>
+                </div>
+            `).join('');
+        }
+
+        function toggleGoal(k) {
+            const idx = activeGoals.indexOf(k);
+            if (idx > -1) activeGoals.splice(idx, 1);
+            else if (activeGoals.length < 3) activeGoals.push(k);
+            populateGoalsGrid();
+            analyzeHealth();
+        }
+
+        function saveGoals() { closeGoalsModal(); saveHealthData(); }
+
+        function generateReport() { window.print(); }
+
+        window.onload = () => {
+            initChart();
+            loadHealthData(); 
+        };
+    </script>
+</body>
+</html>
